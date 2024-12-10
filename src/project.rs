@@ -3,7 +3,7 @@ use anyhow::Context;
 use fs_err::PathExt;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -49,6 +49,10 @@ impl Project {
         &self.name
     }
 
+    pub(crate) fn dirpath(&self) -> &Path {
+        &self.dirpath
+    }
+
     pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
         let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
         Ok(current == "main" || current == "master")
@@ -61,6 +65,16 @@ impl Project {
             dirpath: self.dirpath.clone(),
             on_default_branch: self.on_default_branch()?,
         })
+    }
+
+    pub(crate) fn stash(&self) -> anyhow::Result<()> {
+        if !self
+            .readcmd("git", ["status", "--porcelain", "-uno"])?
+            .is_empty()
+        {
+            self.runcmd("git").arg("stash").run()?;
+        }
+        Ok(())
     }
 
     pub(crate) fn check<S, I>(&self, cmd: S, args: I) -> anyhow::Result<bool>
