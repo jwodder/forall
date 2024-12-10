@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::printbold;
+use crate::util::printlnbold;
 use clap::Args;
 
 /// Run `git clean -dX` on each project
@@ -14,7 +14,7 @@ impl Clean {
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
             if !p.readcmd("git", ["clean", "-dXn"])?.is_empty() {
-                printbold(p.name());
+                printlnbold(p.name());
                 p.runcmd("git")
                     .args(["clean", "-dX"])
                     .quiet(self.quiet)

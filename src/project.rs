@@ -75,7 +75,7 @@ impl Project {
             .stderr(Stdio::null())
             .run();
         match r {
-            Ok(()) => Ok(true),
+            Ok(_) => Ok(true),
             Err(CommandError::Exit { .. }) => Ok(false),
             Err(e) => Err(e.into()),
         }

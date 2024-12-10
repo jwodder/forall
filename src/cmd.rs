@@ -1,3 +1,4 @@
+use crate::util::printlnerror;
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -9,6 +10,7 @@ pub(crate) struct CommandPlus {
     cmdline: String,
     cmd: Command,
     quiet: bool,
+    keep_going: bool,
 }
 
 impl CommandPlus {
@@ -18,6 +20,7 @@ impl CommandPlus {
             cmdline: quote_osstr(arg0),
             cmd: Command::new(arg0),
             quiet: false,
+            keep_going: false,
         }
     }
 
@@ -63,31 +66,39 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn run(&mut self) -> Result<(), CommandError> {
-        if self.quiet {
+    pub(crate) fn keep_going(&mut self, yes: bool) -> &mut Self {
+        self.keep_going = yes;
+        self
+    }
+
+    pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
+        let rc = if self.quiet {
             let (output, rc) = self.combine_stdout_stderr()?;
-            if rc.success() {
-                Ok(())
-            } else {
+            if !rc.success() {
                 // TODO: Better error handling here:
                 let _ = std::io::stdout().write_all(output.as_bytes());
-                Err(CommandError::Exit {
-                    cmdline: self.cmdline.clone(),
-                    rc,
-                })
             }
+            rc
         } else {
-            match self.cmd.status() {
-                Ok(rc) if rc.success() => Ok(()),
-                Ok(rc) => Err(CommandError::Exit {
-                    cmdline: self.cmdline.clone(),
-                    rc,
-                }),
-                Err(source) => Err(CommandError::Startup {
-                    cmdline: self.cmdline.clone(),
-                    source,
-                }),
-            }
+            self.cmd.status().map_err(|source| CommandError::Startup {
+                cmdline: self.cmdline.clone(),
+                source,
+            })?
+        };
+        if rc.success() {
+            Ok(true)
+        } else if self.keep_going {
+            let s = match rc.code() {
+                Some(code) => format!("[{code}]"),
+                None => format!("[{rc}]"),
+            };
+            printlnerror(&s);
+            Ok(false)
+        } else {
+            Err(CommandError::Exit {
+                cmdline: self.cmdline.clone(),
+                rc,
+            })
         }
     }
 
