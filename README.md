@@ -73,6 +73,20 @@ Run `git clean -dX` on each project that needs it
 
 - `-q`, `--quiet` — Suppress successful command output
 
+`forall cloc`
+-------------
+
+    forall [<global options>] cloc [<options>]
+
+Use [`cloc`](https://github.com/AlDanial/cloc/) to count the number of
+effective lines in each project, and output a simple table of the results.
+
+### Options
+
+- `-k`, `--keep-going` — By default, if `cloc` fails for a project, `forall`
+  terminates immediately.  If `--keep-going` is supplied, `forall` will instead
+  continue with the remaining projects.
+
 `forall gc`
 -----------
 
@@ -83,6 +97,29 @@ Run `git gc` on each project
 ### Options
 
 - `-q`, `--quiet` — Suppress successful command output
+
+`forall pre-update`
+-------------------
+
+    forall [<global options>] pre-update [<options>]
+
+Run `pre-commit autoupdate` on all projects with `.pre-commit-config.yaml`
+files.  `pre-commit run -a` is then run to apply any new formatting, followed
+by a second `pre-commit run -a` to ensure that linting is still successful.
+Any & all changes are then committed.
+
+### Options
+
+- `-k`, `--keep-going` — By default, if the `pre-commit autoupdate` or second
+  `precommit run -a` invocation fails, `forall` terminates immediately.  If
+  `--keep-going` is supplied, `forall` will instead continue with the remaining
+  projects.
+
+- `-q`, `--quiet` — Suppress successful command output
+
+- `-F`, `--show-failures` — On exit, print a list of projects for which
+  `pre-commit autoupdate` or the second `precommit run -a` invocation failed.
+  Implies `--keep-going`.
 
 `forall pull`
 -------------
@@ -114,49 +151,6 @@ Run `git push` on each project for which `HEAD` is ahead of `@{upstream}`
 
 - `-q`, `--quiet` — Suppress successful command output
 
-`forall pre-update`
--------------------
-
-    forall [<global options>] pre-update [<options>]
-
-Run `pre-commit autoupdate` on all projects with `.pre-commit-config.yaml`
-files.  `pre-commit run -a` is then run to apply any new formatting, followed
-by a second `pre-commit run -a` to ensure that linting is still successful.
-Any & all changes are then committed.
-
-### Options
-
-- `-k`, `--keep-going` — By default, if the `pre-commit autoupdate` or second
-  `precommit run -a` invocation fails, `forall` terminates immediately.  If
-  `--keep-going` is supplied, `forall` will instead continue with the remaining
-  projects.
-
-- `-q`, `--quiet` — Suppress successful command output
-
-- `-F`, `--show-failures` — On exit, print a list of projects for which
-  `pre-commit autoupdate` or the second `precommit run -a` invocation failed.
-  Implies `--keep-going`.
-
-`forall script`
----------------
-
-    forall [<global options>] script [<options>] <scriptfile>
-
-Run the script `<scriptfile>` on each project.  The script is run via `perl`
-for its shebang-handling, so the script need not be executable, but it does
-need to have an appropriate shebang.
-
-### Options
-
-- `-k`, `--keep-going` — By default, if the script fails for a project,
-  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects.
-
-- `-q`, `--quiet` — Suppress successful command output
-
-- `-F`, `--show-failures` — On exit, print a list of projects for which the
-  script failed.  Implies `--keep-going`.
-
 `forall run`
 ------------
 
@@ -177,16 +171,22 @@ Run the given command on each project.
 - `-F`, `--show-failures` — On exit, print a list of projects for which the
   command failed.  Implies `--keep-going`.
 
-`forall cloc`
--------------
+`forall script`
+---------------
 
-    forall [<global options>] cloc [<options>]
+    forall [<global options>] script [<options>] <scriptfile>
 
-Use [`cloc`](https://github.com/AlDanial/cloc/) to count the number of
-effective lines in each project, and output a simple table of the results.
+Run the script `<scriptfile>` on each project.  The script is run via `perl`
+for its shebang-handling, so the script need not be executable, but it does
+need to have an appropriate shebang.
 
 ### Options
 
-- `-k`, `--keep-going` — By default, if `cloc` fails for a project, `forall`
-  terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects.
+- `-k`, `--keep-going` — By default, if the script fails for a project,
+  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
+  will instead continue with the remaining projects.
+
+- `-q`, `--quiet` — Suppress successful command output
+
+- `-F`, `--show-failures` — On exit, print a list of projects for which the
+  script failed.  Implies `--keep-going`.

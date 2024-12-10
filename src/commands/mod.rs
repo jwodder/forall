@@ -23,13 +23,13 @@ use clap::Subcommand;
 pub(crate) enum Command {
     List(List),
     Clean(Clean),
+    Cloc(Cloc),
     Gc(Gc),
+    PreUpdate(PreUpdate),
     Pull(Pull),
     Push(Push),
-    PreUpdate(PreUpdate),
-    Script(Script),
     Run(Run),
-    Cloc(Cloc),
+    Script(Script),
 }
 
 impl Command {
@@ -37,13 +37,13 @@ impl Command {
         match self {
             Command::List(c) => c.run(projects),
             Command::Clean(c) => c.run(projects),
+            Command::Cloc(c) => c.run(projects),
             Command::Gc(c) => c.run(projects),
+            Command::PreUpdate(c) => c.run(projects),
             Command::Pull(c) => c.run(projects),
             Command::Push(c) => c.run(projects),
-            Command::PreUpdate(c) => c.run(projects),
-            Command::Script(c) => c.run(projects),
             Command::Run(c) => c.run(projects),
-            Command::Cloc(c) => c.run(projects),
+            Command::Script(c) => c.run(projects),
         }
     }
 }
