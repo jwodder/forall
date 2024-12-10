@@ -2,10 +2,12 @@ mod clean;
 mod gc;
 mod list;
 mod pull;
+mod push;
 use self::clean::Clean;
 use self::gc::Gc;
 use self::list::List;
 use self::pull::Pull;
+use self::push::Push;
 use crate::project::Project;
 use clap::Subcommand;
 
@@ -15,6 +17,7 @@ pub(crate) enum Command {
     Clean(Clean),
     Gc(Gc),
     Pull(Pull),
+    Push(Push),
 }
 
 impl Command {
@@ -24,6 +27,7 @@ impl Command {
             Command::Clean(c) => c.run(projects),
             Command::Gc(c) => c.run(projects),
             Command::Pull(c) => c.run(projects),
+            Command::Push(c) => c.run(projects),
         }
     }
 }
