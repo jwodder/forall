@@ -22,8 +22,8 @@ Usage
 Global Options
 --------------
 
-Note that, aside from `--root`, all of the following options can be supplied
-either before or after the subcommand.
+All of the following options can be supplied either before or after the
+subcommand.
 
 - `-D`, `--def-branch` — Only operate on projects currently on their default
   branch (`main` or `master`)
