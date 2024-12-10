@@ -1,6 +1,6 @@
 use crate::cmd::CommandOutputError;
 use crate::project::{Language, Project};
-use crate::util::{printlnbold, printlnerror};
+use crate::util::printlnerror;
 use anyhow::Context;
 use clap::Args;
 use serde::Deserialize;
@@ -16,7 +16,6 @@ pub(crate) struct Cloc {
 impl Cloc {
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
-            printlnbold(p.name());
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
                 printlnerror(&format!("{}: Could not identify source files", p.name()));
