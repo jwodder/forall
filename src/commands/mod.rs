@@ -1,6 +1,8 @@
 mod clean;
+mod gc;
 mod list;
 use self::clean::Clean;
+use self::gc::Gc;
 use self::list::List;
 use crate::project::Project;
 use clap::Subcommand;
@@ -9,6 +11,7 @@ use clap::Subcommand;
 pub(crate) enum Command {
     List(List),
     Clean(Clean),
+    Gc(Gc),
 }
 
 impl Command {
@@ -16,6 +19,7 @@ impl Command {
         match self {
             Command::List(c) => c.run(projects),
             Command::Clean(c) => c.run(projects)?,
+            Command::Gc(c) => c.run(projects)?,
         }
         Ok(())
     }
