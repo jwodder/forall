@@ -1,7 +1,7 @@
 use crate::cmd::{CommandError, CommandPlus};
 use anyhow::Context;
 use fs_err::PathExt;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -54,6 +54,15 @@ impl Project {
         Ok(current == "main" || current == "master")
     }
 
+    pub(crate) fn to_details(&self) -> anyhow::Result<ProjectDetails> {
+        Ok(ProjectDetails {
+            name: self.name.clone(),
+            //dirpath: self.dirpath.to_string_lossy().into_owned(),
+            dirpath: self.dirpath.clone(),
+            on_default_branch: self.on_default_branch()?,
+        })
+    }
+
     pub(crate) fn check<S, I>(&self, cmd: S, args: I) -> anyhow::Result<bool>
     where
         S: AsRef<OsStr>,
@@ -90,6 +99,13 @@ impl Project {
             .map(|s| s.trim().to_owned())
             .map_err(Into::into)
     }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub(crate) struct ProjectDetails {
+    pub(crate) name: String,
+    pub(crate) dirpath: PathBuf,
+    pub(crate) on_default_branch: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]

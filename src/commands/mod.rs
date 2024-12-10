@@ -18,9 +18,8 @@ impl Command {
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         match self {
             Command::List(c) => c.run(projects),
-            Command::Clean(c) => c.run(projects)?,
-            Command::Gc(c) => c.run(projects)?,
+            Command::Clean(c) => c.run(projects),
+            Command::Gc(c) => c.run(projects),
         }
-        Ok(())
     }
 }
