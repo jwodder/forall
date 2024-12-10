@@ -10,6 +10,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Eq, Parser, PartialEq)]
+#[command(version = env!("VERSION_WITH_GIT"))]
 struct Arguments {
     #[arg(long, value_name = "DIRPATH")]
     root: Option<PathBuf>,

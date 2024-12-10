@@ -24,6 +24,9 @@ toml = "0.8.19"
 
 [dev-dependencies]
 
+[build-dependencies]
+anyhow = "1.0.94"
+
 [lints.rust]
 # Lint groups:
 future_incompatible = { level = "deny", priority = -1 }
