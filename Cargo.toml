@@ -13,6 +13,9 @@ publish = false
 [dependencies]
 anyhow = "1.0.94"
 clap = { version = "4.5.23", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"] }
+fs-err = "3.0.0"
+serde = { version = "1.0.215", features = ["derive"] }
+toml = "0.8.19"
 
 [dev-dependencies]
 
