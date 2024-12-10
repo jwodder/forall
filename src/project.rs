@@ -69,6 +69,7 @@ impl Project {
             name: self.name.clone(),
             dirpath: self.dirpath.clone(),
             on_default_branch: self.on_default_branch()?,
+            language: self.language,
             is_workspace: self.is_workspace,
             is_virtual_workspace: self.is_virtual_workspace,
         })
@@ -143,7 +144,7 @@ impl Project {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub(crate) enum Language {
     Python,
     Rust,
@@ -162,6 +163,7 @@ impl Language {
 pub(crate) struct ProjectDetails {
     pub(crate) name: String,
     pub(crate) dirpath: PathBuf,
+    pub(crate) language: Language,
     pub(crate) on_default_branch: bool,
     pub(crate) is_workspace: bool,
     pub(crate) is_virtual_workspace: bool,
