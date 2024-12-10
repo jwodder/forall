@@ -4,12 +4,14 @@ mod list;
 mod preupdate;
 mod pull;
 mod push;
+mod script;
 use self::clean::Clean;
 use self::gc::Gc;
 use self::list::List;
 use self::preupdate::PreUpdate;
 use self::pull::Pull;
 use self::push::Push;
+use self::script::Script;
 use crate::project::Project;
 use clap::Subcommand;
 
@@ -21,6 +23,7 @@ pub(crate) enum Command {
     Pull(Pull),
     Push(Push),
     PreUpdate(PreUpdate),
+    Script(Script),
 }
 
 impl Command {
@@ -32,6 +35,7 @@ impl Command {
             Command::Pull(c) => c.run(projects),
             Command::Push(c) => c.run(projects),
             Command::PreUpdate(c) => c.run(projects),
+            Command::Script(c) => c.run(projects),
         }
     }
 }
