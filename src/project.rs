@@ -5,12 +5,15 @@ use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Project {
     dirpath: PathBuf,
     name: String,
     language: Language,
+    is_workspace: bool,
+    is_virtual_workspace: bool,
 }
 
 impl Project {
@@ -25,14 +28,19 @@ impl Project {
                 dirpath: p,
                 name: data.project.name,
                 language: Language::Python,
+                is_workspace: false,
+                is_virtual_workspace: false,
             }))
         } else if cargo.fs_err_try_exists()? {
             let src = fs_err::read_to_string(&cargo)?;
-            let data = toml::from_str::<Cargo>(&src).context("failed to deserialize Cargo.toml")?;
+            let data = toml::from_str::<Cargo>(&src)
+                .with_context(|| format!("failed to deserialize {}", cargo.display()))?;
             Ok(Some(Project {
                 dirpath: p,
-                name: data.package.name,
+                name: data.name().to_owned(),
                 language: Language::Rust,
+                is_workspace: data.is_workspace(),
+                is_virtual_workspace: data.is_virtual_workspace(),
             }))
         } else {
             Ok(None)
@@ -59,9 +67,10 @@ impl Project {
     pub(crate) fn to_details(&self) -> anyhow::Result<ProjectDetails> {
         Ok(ProjectDetails {
             name: self.name.clone(),
-            //dirpath: self.dirpath.to_string_lossy().into_owned(),
             dirpath: self.dirpath.clone(),
             on_default_branch: self.on_default_branch()?,
+            is_workspace: self.is_workspace,
+            is_virtual_workspace: self.is_virtual_workspace,
         })
     }
 
@@ -154,6 +163,8 @@ pub(crate) struct ProjectDetails {
     pub(crate) name: String,
     pub(crate) dirpath: PathBuf,
     pub(crate) on_default_branch: bool,
+    pub(crate) is_workspace: bool,
+    pub(crate) is_virtual_workspace: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -162,11 +173,84 @@ struct Pyproject {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-struct Cargo {
-    package: NameTable,
+#[serde(try_from = "RawCargo")]
+enum Cargo {
+    Package {
+        package: NameTable,
+    },
+    Workspace {
+        workspace: Workspace,
+        package: NameTable,
+    },
+    Virtual {
+        workspace: Workspace,
+    },
 }
+
+impl Cargo {
+    fn name(&self) -> &str {
+        match self {
+            Cargo::Workspace { package, .. } => &package.name,
+            Cargo::Virtual { workspace } => workspace.package.repository.name(),
+            Cargo::Package { package } => &package.name,
+        }
+    }
+
+    fn is_workspace(&self) -> bool {
+        matches!(self, Cargo::Workspace { .. } | Cargo::Virtual { .. })
+    }
+
+    fn is_virtual_workspace(&self) -> bool {
+        matches!(self, Cargo::Virtual { .. })
+    }
+}
+
+impl TryFrom<RawCargo> for Cargo {
+    type Error = FromRawCargoError;
+
+    fn try_from(value: RawCargo) -> Result<Cargo, FromRawCargoError> {
+        match value {
+            RawCargo {
+                package: Some(package),
+                workspace: None,
+            } => Ok(Cargo::Package { package }),
+            RawCargo {
+                package: Some(package),
+                workspace: Some(workspace),
+            } => Ok(Cargo::Workspace { workspace, package }),
+            RawCargo {
+                package: None,
+                workspace: Some(workspace),
+            } => Ok(Cargo::Virtual { workspace }),
+            RawCargo {
+                package: None,
+                workspace: None,
+            } => Err(FromRawCargoError),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[error("Cargo.toml lacks both [package] and [workspace] tables")]
+pub(crate) struct FromRawCargoError;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 struct NameTable {
     name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+struct RawCargo {
+    package: Option<NameTable>,
+    workspace: Option<Workspace>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+struct Workspace {
+    package: WorkspacePackage,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+struct WorkspacePackage {
+    repository: ghrepo::GHRepo,
 }

@@ -89,6 +89,7 @@ dependencies = [
  "anyhow",
  "clap",
  "fs-err",
+ "ghrepo",
  "serde",
  "serde-jsonlines",
  "serde_json",
@@ -104,6 +105,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb60e7409f34ef959985bc9d9c5ee8f5db24ee46ed9775850548021710f807f"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "ghrepo"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02f4bcc4568336df3e33e9015d59b84d05bc91daa2d7d62b02cd90b901105199"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
