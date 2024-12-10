@@ -1,4 +1,5 @@
 mod clean;
+mod cloc;
 mod gc;
 mod list;
 mod preupdate;
@@ -7,6 +8,7 @@ mod push;
 mod run;
 mod script;
 use self::clean::Clean;
+use self::cloc::Cloc;
 use self::gc::Gc;
 use self::list::List;
 use self::preupdate::PreUpdate;
@@ -27,6 +29,7 @@ pub(crate) enum Command {
     PreUpdate(PreUpdate),
     Script(Script),
     Run(Run),
+    Cloc(Cloc),
 }
 
 impl Command {
@@ -40,6 +43,7 @@ impl Command {
             Command::PreUpdate(c) => c.run(projects),
             Command::Script(c) => c.run(projects),
             Command::Run(c) => c.run(projects),
+            Command::Cloc(c) => c.run(projects),
         }
     }
 }

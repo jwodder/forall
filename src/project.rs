@@ -13,12 +13,6 @@ pub(crate) struct Project {
     language: Language,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum Language {
-    Python,
-    Rust,
-}
-
 impl Project {
     pub(crate) fn try_for_dirpath(p: PathBuf) -> anyhow::Result<Option<Project>> {
         let pyproject = p.join("pyproject.toml");
@@ -53,6 +47,10 @@ impl Project {
         &self.dirpath
     }
 
+    pub(crate) fn language(&self) -> Language {
+        self.language
+    }
+
     pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
         let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
         Ok(current == "main" || current == "master")
@@ -65,6 +63,27 @@ impl Project {
             dirpath: self.dirpath.clone(),
             on_default_branch: self.on_default_branch()?,
         })
+    }
+
+    pub(crate) fn source_paths(&self) -> anyhow::Result<Vec<PathBuf>> {
+        match self.language {
+            Language::Python => {
+                if self.dirpath.join("src").fs_err_try_exists()? {
+                    Ok(vec![PathBuf::from("src")])
+                } else {
+                    let mut srcs = Vec::new();
+                    for entry in fs_err::read_dir(&self.dirpath)? {
+                        let entry = entry?;
+                        let name = PathBuf::from(entry.file_name());
+                        if name.to_string_lossy().ends_with(".py") {
+                            srcs.push(name);
+                        }
+                    }
+                    Ok(srcs)
+                }
+            }
+            Language::Rust => Ok(vec![PathBuf::from("src")]),
+        }
     }
 
     pub(crate) fn stash(&self) -> anyhow::Result<()> {
@@ -112,6 +131,21 @@ impl Project {
             .check_output()
             .map(|s| s.trim().to_owned())
             .map_err(Into::into)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Language {
+    Python,
+    Rust,
+}
+
+impl Language {
+    pub(crate) fn ext(&self) -> &'static str {
+        match self {
+            Language::Python => "py",
+            Language::Rust => "rs",
+        }
     }
 }
 

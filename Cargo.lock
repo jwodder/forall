@@ -91,6 +91,7 @@ dependencies = [
  "fs-err",
  "serde",
  "serde-jsonlines",
+ "serde_json",
  "shell-words",
  "thiserror",
  "toml",
