@@ -34,3 +34,40 @@ fn main() -> anyhow::Result<()> {
     let projects = finder.findall(root)?;
     command.run(projects)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::Run;
+    use std::ffi::OsString;
+
+    #[test]
+    fn test_run_known_opt() {
+        let args = Arguments::try_parse_from(["arg0", "run", "cmd", "-q"]).unwrap();
+        assert_eq!(
+            args.command,
+            Command::Run(Run {
+                quiet: false,
+                keep_going: false,
+                shell: false,
+                show_failures: false,
+                command: vec![OsString::from("cmd"), OsString::from("-q")],
+            })
+        );
+    }
+
+    #[test]
+    fn test_run_unknown_opt() {
+        let args = Arguments::try_parse_from(["arg0", "run", "cmd", "-x"]).unwrap();
+        assert_eq!(
+            args.command,
+            Command::Run(Run {
+                quiet: false,
+                keep_going: false,
+                shell: false,
+                show_failures: false,
+                command: vec![OsString::from("cmd"), OsString::from("-x")],
+            })
+        );
+    }
+}

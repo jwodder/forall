@@ -8,35 +8,34 @@ use std::ffi::OsString;
 pub(crate) struct Run {
     /// Don't exit on errors
     #[arg(short, long)]
-    keep_going: bool,
+    pub(crate) keep_going: bool,
 
     /// Suppress command output
     #[arg(short, long)]
-    quiet: bool,
+    pub(crate) quiet: bool,
 
     #[arg(long)]
-    shell: bool,
+    pub(crate) shell: bool,
 
     #[arg(short = 'F', long)]
-    show_failures: bool,
+    pub(crate) show_failures: bool,
 
-    command: OsString,
-
-    #[arg(allow_hyphen_values = true)]
-    args: Vec<OsString>,
+    #[arg(allow_hyphen_values = true, trailing_var_arg = true, required = true)]
+    pub(crate) command: Vec<OsString>,
 }
 
 impl Run {
     pub(crate) fn run(mut self, projects: Vec<Project>) -> anyhow::Result<()> {
         let (cmd, args) = if self.shell {
             let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
-            let mut args = Vec::with_capacity(self.args.len().saturating_add(2));
+            let mut args = Vec::with_capacity(self.command.len().saturating_add(1));
             args.push(OsString::from("-c"));
-            args.push(self.command);
-            args.extend(self.args);
+            args.extend(self.command);
             (cmd, args)
         } else {
-            (self.command, self.args)
+            let mut iter = self.command.into_iter();
+            let cmd = iter.next().expect("command should be nonempty");
+            (cmd, iter.collect())
         };
         if self.show_failures {
             self.keep_going = true;

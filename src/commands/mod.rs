@@ -12,7 +12,7 @@ use self::list::List;
 use self::preupdate::PreUpdate;
 use self::pull::Pull;
 use self::push::Push;
-use self::run::Run;
+pub(crate) use self::run::Run;
 use self::script::Script;
 use crate::project::Project;
 use clap::Subcommand;
