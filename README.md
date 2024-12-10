@@ -67,7 +67,7 @@ Print the name of each project in the directory tree in sorted order.
 
     forall [<global options>] clean [<options>]
 
-Run `git clean -dX` on each project that needs it
+Run `git clean -dXf` on each project that needs it
 
 ### Options
 

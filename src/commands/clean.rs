@@ -2,7 +2,7 @@ use crate::project::Project;
 use crate::util::printlnbold;
 use clap::Args;
 
-/// Run `git clean -dX` on each project
+/// Run `git clean -dXf` on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Clean {
     /// Suppress successful command output
@@ -16,7 +16,7 @@ impl Clean {
             if !p.readcmd("git", ["clean", "-dXn"])?.is_empty() {
                 printlnbold(p.name());
                 p.runcmd("git")
-                    .args(["clean", "-dX"])
+                    .args(["clean", "-dXf"])
                     .quiet(self.quiet)
                     .run()?;
             }
