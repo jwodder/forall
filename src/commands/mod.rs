@@ -1,7 +1,7 @@
-mod list;
 mod clean;
-use self::list::List;
+mod list;
 use self::clean::Clean;
+use self::list::List;
 use crate::project::Project;
 use clap::Subcommand;
 

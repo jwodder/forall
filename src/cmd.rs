@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Stdio};
 use thiserror::Error;
@@ -7,6 +8,7 @@ use thiserror::Error;
 pub(crate) struct CommandPlus {
     cmdline: String,
     cmd: Command,
+    quiet: bool,
 }
 
 impl CommandPlus {
@@ -15,6 +17,7 @@ impl CommandPlus {
         CommandPlus {
             cmdline: quote_osstr(arg0),
             cmd: Command::new(arg0),
+            quiet: false,
         }
     }
 
@@ -56,22 +59,35 @@ impl CommandPlus {
     }
 
     pub(crate) fn quiet(&mut self, yes: bool) -> &mut Self {
-        // Pipe stdout & stderr to same pipe
-        // On run(), if not successful, print combined stdout/stderr
-        todo!()
+        self.quiet = yes;
+        self
     }
 
     pub(crate) fn run(&mut self) -> Result<(), CommandError> {
-        match self.cmd.status() {
-            Ok(rc) if rc.success() => Ok(()),
-            Ok(rc) => Err(CommandError::Exit {
-                cmdline: self.cmdline.clone(),
-                rc,
-            }),
-            Err(source) => Err(CommandError::Startup {
-                cmdline: self.cmdline.clone(),
-                source,
-            }),
+        if self.quiet {
+            let (output, rc) = self.combine_stdout_stderr()?;
+            if rc.success() {
+                Ok(())
+            } else {
+                // TODO: Better error handling here:
+                let _ = std::io::stdout().write_all(output.as_bytes());
+                Err(CommandError::Exit {
+                    cmdline: self.cmdline.clone(),
+                    rc,
+                })
+            }
+        } else {
+            match self.cmd.status() {
+                Ok(rc) if rc.success() => Ok(()),
+                Ok(rc) => Err(CommandError::Exit {
+                    cmdline: self.cmdline.clone(),
+                    rc,
+                }),
+                Err(source) => Err(CommandError::Startup {
+                    cmdline: self.cmdline.clone(),
+                    source,
+                }),
+            }
         }
     }
 
@@ -94,6 +110,93 @@ impl CommandPlus {
             }),
         }
     }
+
+    pub(crate) fn combine_stdout_stderr(
+        &mut self,
+    ) -> Result<(String, ExitStatus), CombinedCommandError> {
+        // <https://stackoverflow.com/a/72831067/744178>
+        let mut child = self
+            .cmd
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|source| CombinedCommandError::Startup {
+                cmdline: self.cmdline.clone(),
+                source,
+            })?;
+        let child_stdout = child
+            .stdout
+            .take()
+            .expect("child.stdout should be non-None");
+        let child_stderr = child
+            .stderr
+            .take()
+            .expect("child.stderr should be non-None");
+
+        let (sender, receiver) = std::sync::mpsc::channel();
+
+        let stdout_sender = sender.clone();
+        let stdout_thread = std::thread::spawn(move || {
+            let mut stdout = BufReader::new(child_stdout);
+            loop {
+                let mut line = String::new();
+                if stdout.read_line(&mut line)? == 0 {
+                    break;
+                }
+                if stdout_sender.send(line).is_err() {
+                    break;
+                }
+            }
+            Ok(())
+        });
+
+        let stderr_sender = sender.clone();
+        let stderr_thread = std::thread::spawn(move || {
+            let mut stderr = BufReader::new(child_stderr);
+            loop {
+                let mut line = String::new();
+                if stderr.read_line(&mut line)? == 0 {
+                    break;
+                }
+                if stderr_sender.send(line).is_err() {
+                    break;
+                }
+            }
+            Ok(())
+        });
+
+        drop(sender);
+
+        let rc = child.wait().map_err(|source| CombinedCommandError::Wait {
+            cmdline: self.cmdline.clone(),
+            source,
+        })?;
+
+        match stdout_thread.join() {
+            Ok(Ok(())) => (),
+            Ok(Err(source)) => {
+                return Err(CombinedCommandError::Read {
+                    cmdline: self.cmdline.clone(),
+                    source,
+                })
+            }
+            Err(barf) => std::panic::resume_unwind(barf),
+        }
+
+        match stderr_thread.join() {
+            Ok(Ok(())) => (),
+            Ok(Err(source)) => {
+                return Err(CombinedCommandError::Read {
+                    cmdline: self.cmdline.clone(),
+                    source,
+                })
+            }
+            Err(barf) => std::panic::resume_unwind(barf),
+        }
+
+        let output = receiver.into_iter().collect::<String>();
+        Ok((output, rc))
+    }
 }
 
 #[derive(Debug, Error)]
@@ -105,6 +208,8 @@ pub(crate) enum CommandError {
     },
     #[error("command `{cmdline}` failed: {rc}")]
     Exit { cmdline: String, rc: ExitStatus },
+    #[error(transparent)]
+    Combined(#[from] CombinedCommandError),
 }
 
 #[derive(Debug, Error)]
@@ -120,6 +225,25 @@ pub(crate) enum CommandOutputError {
     Decode {
         cmdline: String,
         source: std::str::Utf8Error,
+    },
+}
+
+#[derive(Debug, Error)]
+pub(crate) enum CombinedCommandError {
+    #[error("failed to run `{cmdline}`")]
+    Startup {
+        cmdline: String,
+        source: std::io::Error,
+    },
+    #[error("error reading from `{cmdline}`")]
+    Read {
+        cmdline: String,
+        source: std::io::Error,
+    },
+    #[error("error waiting for `{cmdline}` to terminate")]
+    Wait {
+        cmdline: String,
+        source: std::io::Error,
     },
 }
 
