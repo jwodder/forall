@@ -1,7 +1,10 @@
+use crate::cmd::{CommandError, CommandPlus};
 use anyhow::Context;
 use fs_err::PathExt;
 use serde::Deserialize;
+use std::ffi::OsStr;
 use std::path::PathBuf;
+use std::process::Stdio;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Project {
@@ -40,6 +43,46 @@ impl Project {
         } else {
             Ok(None)
         }
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
+        let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
+        Ok(current == "main" || current == "master")
+    }
+
+    pub(crate) fn check<S, I>(&self, cmd: S, args: I) -> anyhow::Result<bool>
+    where
+        S: AsRef<OsStr>,
+        I: IntoIterator<Item: AsRef<OsStr>>,
+    {
+        let r = CommandPlus::new(cmd)
+            .args(args)
+            .current_dir(&self.dirpath)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        match r {
+            Ok(()) => Ok(true),
+            Err(CommandError::Exit { .. }) => Ok(false),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> anyhow::Result<String>
+    where
+        S: AsRef<OsStr>,
+        I: IntoIterator<Item: AsRef<OsStr>>,
+    {
+        CommandPlus::new(cmd)
+            .args(args)
+            .current_dir(&self.dirpath)
+            .check_output()
+            .map(|s| s.trim().to_owned())
+            .map_err(Into::into)
     }
 }
 

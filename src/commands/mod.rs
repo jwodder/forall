@@ -1,6 +1,6 @@
 mod list;
 use self::list::List;
-use crate::finder::Finder;
+use crate::project::Project;
 use clap::Subcommand;
 
 #[derive(Clone, Debug, Eq, PartialEq, Subcommand)]
@@ -9,9 +9,11 @@ pub(crate) enum Command {
 }
 
 impl Command {
-    pub(crate) fn run(self, finder: Finder) -> anyhow::Result<()> {
+    #[expect(clippy::unnecessary_wraps)]
+    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         match self {
-            Command::List(lst) => lst.run(finder),
+            Command::List(lst) => lst.run(projects),
         }
+        Ok(())
     }
 }

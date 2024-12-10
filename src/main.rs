@@ -1,3 +1,4 @@
+mod cmd;
 mod commands;
 mod finder;
 mod project;
@@ -16,5 +17,6 @@ struct Arguments {
 
 fn main() -> anyhow::Result<()> {
     let Arguments { finder, command } = Arguments::parse();
-    command.run(finder)
+    let projects = finder.findall(".".into())?;
+    command.run(projects)
 }
