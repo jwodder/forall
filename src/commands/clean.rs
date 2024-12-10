@@ -5,7 +5,7 @@ use clap::Args;
 /// Run `git clean -dX` on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Clean {
-    /// Suppress command output
+    /// Suppress successful command output
     #[arg(short, long)]
     quiet: bool,
 }

@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug, Eq, Parser, PartialEq)]
 struct Arguments {
-    #[arg(long)]
+    #[arg(long, value_name = "DIRPATH")]
     root: Option<PathBuf>,
 
     #[command(flatten)]

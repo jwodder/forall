@@ -20,7 +20,7 @@ pub(crate) struct Finder {
     no_def_branch: bool,
 
     /// Skip the given project
-    #[arg(long, global = true)]
+    #[arg(long, global = true, value_name = "NAME")]
     skip: Vec<String>,
 }
 

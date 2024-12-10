@@ -9,7 +9,7 @@ pub(crate) struct Pull {
     #[arg(short, long)]
     keep_going: bool,
 
-    /// Suppress command output
+    /// Suppress successful command output
     #[arg(short, long)]
     quiet: bool,
 }

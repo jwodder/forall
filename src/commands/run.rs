@@ -10,7 +10,7 @@ pub(crate) struct Run {
     #[arg(short, long)]
     pub(crate) keep_going: bool,
 
-    /// Suppress command output
+    /// Suppress successful command output
     #[arg(short, long)]
     pub(crate) quiet: bool,
 

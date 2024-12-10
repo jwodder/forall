@@ -5,7 +5,7 @@ use clap::Args;
 /// Run `git gc` on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Gc {
-    /// Suppress command output
+    /// Suppress successful command output
     #[arg(short, long)]
     quiet: bool,
 }
