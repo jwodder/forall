@@ -1,4 +1,5 @@
 use crate::project::Project;
+use anyhow::Context;
 use clap::Args;
 use fs_err::PathExt;
 use std::collections::HashSet;
@@ -19,13 +20,21 @@ pub(crate) struct Finder {
     #[arg(long, global = true)]
     no_def_branch: bool,
 
+    /// Directory to traverse for projects [default: current directory]
+    #[arg(long, global = true, value_name = "DIRPATH")]
+    root: Option<PathBuf>,
+
     /// Skip the given project
     #[arg(long, global = true, value_name = "NAME")]
     skip: Vec<String>,
 }
 
 impl Finder {
-    pub(crate) fn findall(&self, root: PathBuf) -> anyhow::Result<Vec<Project>> {
+    pub(crate) fn findall(&self) -> anyhow::Result<Vec<Project>> {
+        let root = match &self.root {
+            Some(p) => p.clone(),
+            None => std::env::current_dir().context("failed to determine current directory")?,
+        };
         let shell = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
         let mut projects = self.find(root, &shell)?;
         projects.sort_unstable_by(|p1, p2| p1.name().cmp(p2.name()));
