@@ -1,18 +1,21 @@
 mod list;
+mod clean;
 use self::list::List;
+use self::clean::Clean;
 use crate::project::Project;
 use clap::Subcommand;
 
 #[derive(Clone, Debug, Eq, PartialEq, Subcommand)]
 pub(crate) enum Command {
     List(List),
+    Clean(Clean),
 }
 
 impl Command {
-    #[expect(clippy::unnecessary_wraps)]
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         match self {
-            Command::List(lst) => lst.run(projects),
+            Command::List(c) => c.run(projects),
+            Command::Clean(c) => c.run(projects)?,
         }
         Ok(())
     }

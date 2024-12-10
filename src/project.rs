@@ -64,12 +64,18 @@ impl Project {
             .current_dir(&self.dirpath)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status();
+            .run();
         match r {
             Ok(()) => Ok(true),
             Err(CommandError::Exit { .. }) => Ok(false),
             Err(e) => Err(e.into()),
         }
+    }
+
+    pub(crate) fn runcmd<S: AsRef<OsStr>>(&self, cmd: S) -> CommandPlus {
+        let mut cmd = CommandPlus::new(cmd);
+        cmd.current_dir(&self.dirpath);
+        cmd
     }
 
     pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> anyhow::Result<String>
@@ -87,16 +93,16 @@ impl Project {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-pub(crate) struct Pyproject {
+struct Pyproject {
     project: NameTable,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-pub(crate) struct Cargo {
+struct Cargo {
     package: NameTable,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-pub(crate) struct NameTable {
+struct NameTable {
     name: String,
 }

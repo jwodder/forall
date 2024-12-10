@@ -55,7 +55,13 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn status(&mut self) -> Result<(), CommandError> {
+    pub(crate) fn quiet(&mut self, yes: bool) -> &mut Self {
+        // Pipe stdout & stderr to same pipe
+        // On run(), if not successful, print combined stdout/stderr
+        todo!()
+    }
+
+    pub(crate) fn run(&mut self) -> Result<(), CommandError> {
         match self.cmd.status() {
             Ok(rc) if rc.success() => Ok(()),
             Ok(rc) => Err(CommandError::Exit {
