@@ -26,8 +26,9 @@ fn main() -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::commands::Run;
+    use crate::commands::{Run, Script};
     use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[test]
     fn test_run_known_opt() {
@@ -55,6 +56,34 @@ mod tests {
                 shell: false,
                 show_failures: false,
                 command: vec![OsString::from("cmd"), OsString::from("-x")],
+            })
+        );
+    }
+
+    #[test]
+    fn test_script_show_failures() {
+        let args = Arguments::try_parse_from(["arg0", "script", "--show-failures", "cmd"]).unwrap();
+        assert_eq!(
+            args.command,
+            Command::Script(Script {
+                quiet: false,
+                keep_going: true,
+                show_failures: true,
+                scriptfile: PathBuf::from("cmd"),
+            })
+        );
+    }
+
+    #[test]
+    fn test_script_no_show_failures() {
+        let args = Arguments::try_parse_from(["arg0", "script", "cmd"]).unwrap();
+        assert_eq!(
+            args.command,
+            Command::Script(Script {
+                quiet: false,
+                keep_going: false,
+                show_failures: false,
+                scriptfile: PathBuf::from("cmd"),
             })
         );
     }

@@ -7,7 +7,11 @@ use std::ffi::OsString;
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Run {
     /// Don't exit on errors
-    #[arg(short, long)]
+    #[arg(
+        short,
+        long,
+        default_value_if("show_failures", clap::builder::ArgPredicate::IsPresent, "true")
+    )]
     pub(crate) keep_going: bool,
 
     /// Suppress successful command output
@@ -25,7 +29,7 @@ pub(crate) struct Run {
 }
 
 impl Run {
-    pub(crate) fn run(mut self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         let (cmd, args) = if self.shell {
             let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
             let mut args = Vec::with_capacity(self.command.len().saturating_add(1));
@@ -37,9 +41,6 @@ impl Run {
             let cmd = iter.next().expect("command should be nonempty");
             (cmd, iter.collect())
         };
-        if self.show_failures {
-            self.keep_going = true;
-        }
         let mut failures = Vec::new();
         for p in projects {
             printlnbold(p.name());

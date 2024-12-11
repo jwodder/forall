@@ -15,7 +15,7 @@ use self::preupdate::PreUpdate;
 use self::pull::Pull;
 use self::push::Push;
 pub(crate) use self::run::Run;
-use self::script::Script;
+pub(crate) use self::script::Script;
 use crate::project::Project;
 use clap::Subcommand;
 
