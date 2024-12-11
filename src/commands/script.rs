@@ -7,25 +7,26 @@ use std::path::PathBuf;
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Script {
     /// Don't exit on errors
-    #[arg(short, long)]
-    keep_going: bool,
+    #[arg(
+        short,
+        long,
+        default_value_if("show_failures", clap::builder::ArgPredicate::IsPresent, "true")
+    )]
+    pub(crate) keep_going: bool,
 
     /// Suppress successful command output
     #[arg(short, long)]
-    quiet: bool,
+    pub(crate) quiet: bool,
 
     #[arg(short = 'F', long)]
-    show_failures: bool,
+    pub(crate) show_failures: bool,
 
-    scriptfile: PathBuf,
+    pub(crate) scriptfile: PathBuf,
 }
 
 impl Script {
-    pub(crate) fn run(mut self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         let scriptfile = fs_err::canonicalize(self.scriptfile)?;
-        if self.show_failures {
-            self.keep_going = true;
-        }
         let mut failures = Vec::new();
         for p in projects {
             printlnbold(p.name());

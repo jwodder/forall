@@ -10,7 +10,11 @@ static PRE_COMMIT_FILE: &str = ".pre-commit-config.yaml";
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PreUpdate {
     /// Don't exit on errors
-    #[arg(short, long)]
+    #[arg(
+        short,
+        long,
+        default_value_if("show_failures", clap::builder::ArgPredicate::IsPresent, "true")
+    )]
     keep_going: bool,
 
     /// Suppress successful command output
@@ -22,10 +26,7 @@ pub(crate) struct PreUpdate {
 }
 
 impl PreUpdate {
-    pub(crate) fn run(mut self, projects: Vec<Project>) -> anyhow::Result<()> {
-        if self.show_failures {
-            self.keep_going = true;
-        }
+    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
