@@ -7,6 +7,7 @@ use crate::commands::Command;
 use crate::finder::Finder;
 use clap::Parser;
 
+/// Operate on each project in a directory
 #[derive(Clone, Debug, Eq, Parser, PartialEq)]
 #[command(version = env!("VERSION_WITH_GIT"))]
 struct Arguments {

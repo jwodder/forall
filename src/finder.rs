@@ -24,7 +24,7 @@ pub(crate) struct Finder {
     #[arg(long, global = true, value_name = "DIRPATH")]
     root: Option<PathBuf>,
 
-    /// Skip the given project
+    /// Skip the given project.  Can be specified multiple times.
     #[arg(long, global = true, value_name = "NAME")]
     skip: Vec<String>,
 }
