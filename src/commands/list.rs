@@ -5,6 +5,7 @@ use serde_jsonlines::JsonLinesWriter;
 /// List all projects
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct List {
+    /// Output JSON
     #[arg(short = 'J', long)]
     json: bool,
 }

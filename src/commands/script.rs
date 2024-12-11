@@ -18,6 +18,7 @@ pub(crate) struct Script {
     #[arg(short, long)]
     pub(crate) quiet: bool,
 
+    /// List failures at end of run.  Implies `--keep-going`.
     #[arg(short = 'F', long)]
     pub(crate) show_failures: bool,
 

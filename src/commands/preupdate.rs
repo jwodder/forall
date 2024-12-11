@@ -21,6 +21,7 @@ pub(crate) struct PreUpdate {
     #[arg(short, long)]
     quiet: bool,
 
+    /// List failures at end of run.  Implies `--keep-going`.
     #[arg(short = 'F', long)]
     show_failures: bool,
 }

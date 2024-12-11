@@ -18,9 +18,11 @@ pub(crate) struct Run {
     #[arg(short, long)]
     pub(crate) quiet: bool,
 
+    /// Run command in a shell
     #[arg(long)]
     pub(crate) shell: bool,
 
+    /// List failures at end of run.  Implies `--keep-going`.
     #[arg(short = 'F', long)]
     pub(crate) show_failures: bool,
 
