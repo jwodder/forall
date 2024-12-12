@@ -46,6 +46,8 @@ impl PreUpdate {
                 continue;
             }
             p.runcmd("git").args(["add", PRE_COMMIT_FILE]).run()?;
+            // TODO: Suppress the "[{returncode}]" output when this fails:
+            // TODO: Shouldn't this honor --quiet?
             p.runcmd("pre-commit")
                 .args(["run", "-a"])
                 .keep_going(true)
