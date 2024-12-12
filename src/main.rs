@@ -44,6 +44,7 @@ mod tests {
         assert_eq!(
             args.command,
             Command::Run(Run {
+                script: false,
                 shell: false,
                 command: vec![OsString::from("cmd"), OsString::from("--shell")],
             })
@@ -56,9 +57,16 @@ mod tests {
         assert_eq!(
             args.command,
             Command::Run(Run {
+                script: false,
                 shell: false,
                 command: vec![OsString::from("cmd"), OsString::from("-x")],
             })
         );
+    }
+
+    #[test]
+    fn test_run_script_shell() {
+        let r = Arguments::try_parse_from(["arg0", "run", "--script", "--shell", "foo.sh"]);
+        assert!(r.is_err());
     }
 }

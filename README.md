@@ -29,7 +29,7 @@ subcommand.
   branch (`main` or `master`)
 
 - `-f <shellcmd>`, `--filter <shellcmd>` — Run `$SHELL -c <shellcmd>` in each
-  project and only operate on those for which the command succeeds
+  project and only operate on those projects for which the command succeeds
 
 - `-k`, `--keep-going` — By default, if a subcommand fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
@@ -127,17 +127,9 @@ project's directory.
 
 ### Options
 
-- `--shell` — Run the command with `$SHELL -c <command>`
+- `--script` — Treat the command as a path to a script file.  The path is
+  canonicalized, and it is run via `perl` for its shebang handling; thus, the
+  script need not be executable, but it does need to have an appropriate
+  shebang.
 
-`forall script`
----------------
-
-    forall [<global options>] script <scriptfile>
-
-Run the script `<scriptfile>` on each project.
-
-The script is run with the current working directory set to each respective
-project's directory.
-
-The script is run via `perl` for its shebang-handling, so the script need not
-be executable, but it does need to have an appropriate shebang.
+- `--shell` — Run the command with `$SHELL -c <command> <args>`
