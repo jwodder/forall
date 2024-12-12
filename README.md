@@ -4,7 +4,7 @@
 [![Minimum Supported Rust Version](https://img.shields.io/badge/MSRV-1.79-orange)](https://www.rust-lang.org)
 [![MIT License](https://img.shields.io/github/license/jwodder/forall.svg)](https://opensource.org/licenses/MIT)
 
-[GitHub](https://github.com/jwodder/forall) | [Issues](https://github.com/jwodder/forall/issues)
+[GitHub](https://github.com/jwodder/forall) | [Issues](https://github.com/jwodder/forall/issues) | [Changelog](https://github.com/jwodder/forall/blob/main/CHANGELOG.md)
 
 `forall` is a [Rust](https://www.rust-lang.org) program for performing various
 operations on multiple local Git repositories at once.  It traverses a
@@ -85,7 +85,8 @@ effective lines in each project, and output a simple table of the results.
 
 - `-k`, `--keep-going` — By default, if `cloc` fails for a project, `forall`
   terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects.
+  continue with the remaining projects and will print a list of all failures on
+  exit.
 
 `forall gc`
 -----------
@@ -113,13 +114,9 @@ Any & all changes are then committed.
 - `-k`, `--keep-going` — By default, if the `pre-commit autoupdate` or second
   `precommit run -a` invocation fails, `forall` terminates immediately.  If
   `--keep-going` is supplied, `forall` will instead continue with the remaining
-  projects.
+  projects and will print a list of all failures on exit.
 
 - `-q`, `--quiet` — Suppress successful command output
-
-- `-F`, `--show-failures` — On exit, print a list of projects for which
-  `pre-commit autoupdate` or the second `precommit run -a` invocation failed.
-  Implies `--keep-going`.
 
 `forall pull`
 -------------
@@ -132,7 +129,8 @@ Run `git pull` on each project
 
 - `-k`, `--keep-going` — By default, if a `git pull` invocation fails, `forall`
   terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects.
+  continue with the remaining projects and will print a list of all failures on
+  exit.
 
 - `-q`, `--quiet` — Suppress successful command output
 
@@ -147,7 +145,8 @@ Run `git push` on each project for which `HEAD` is ahead of `@{upstream}`
 
 - `-k`, `--keep-going` — By default, if a `git push` invocation fails, `forall`
   terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects.
+  continue with the remaining projects and will print a list of all failures on
+  exit.
 
 - `-q`, `--quiet` — Suppress successful command output
 
@@ -162,14 +161,12 @@ Run the given command on each project.
 
 - `-k`, `--keep-going` — By default, if the command fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects.
+  will instead continue with the remaining projects and will print a list of
+  all failures on exit.
 
 - `-q`, `--quiet` — Suppress successful command output
 
 - `--shell` — Run the command with `$SHELL -c <command>`
-
-- `-F`, `--show-failures` — On exit, print a list of projects for which the
-  command failed.  Implies `--keep-going`.
 
 `forall script`
 ---------------
@@ -184,9 +181,7 @@ need to have an appropriate shebang.
 
 - `-k`, `--keep-going` — By default, if the script fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects.
+  will instead continue with the remaining projects and will print a list of
+  all failures on exit.
 
 - `-q`, `--quiet` — Suppress successful command output
-
-- `-F`, `--show-failures` — On exit, print a list of projects for which the
-  script failed.  Implies `--keep-going`.

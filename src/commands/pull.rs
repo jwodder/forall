@@ -16,13 +16,24 @@ pub(crate) struct Pull {
 
 impl Pull {
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+        let mut failures = Vec::new();
         for p in projects {
             printlnbold(p.name());
-            p.runcmd("git")
+            if !p
+                .runcmd("git")
                 .arg("pull")
                 .quiet(self.quiet)
                 .keep_going(self.keep_going)
-                .run()?;
+                .run()?
+            {
+                failures.push(p);
+            }
+        }
+        if !failures.is_empty() {
+            printlnbold("\nFailures:");
+            for p in failures {
+                println!("{}", p.name());
+            }
         }
         Ok(())
     }

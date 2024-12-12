@@ -7,20 +7,12 @@ use std::path::PathBuf;
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Script {
     /// Don't exit on errors
-    #[arg(
-        short,
-        long,
-        default_value_if("show_failures", clap::builder::ArgPredicate::IsPresent, "true")
-    )]
+    #[arg(short, long)]
     pub(crate) keep_going: bool,
 
     /// Suppress successful command output
     #[arg(short, long)]
     pub(crate) quiet: bool,
-
-    /// List failures at end of run.  Implies `--keep-going`.
-    #[arg(short = 'F', long)]
-    pub(crate) show_failures: bool,
 
     pub(crate) scriptfile: PathBuf,
 }
@@ -40,13 +32,13 @@ impl Script {
                 .keep_going(self.keep_going)
                 .run()?
             {
-                failures.push(p.name().to_owned());
+                failures.push(p);
             }
         }
-        if !failures.is_empty() && self.show_failures {
+        if !failures.is_empty() {
             printlnbold("\nFailures:");
-            for name in failures {
-                println!("{name}");
+            for p in failures {
+                println!("{}", p.name());
             }
         }
         Ok(())
