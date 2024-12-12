@@ -3,7 +3,13 @@ use crate::util::{printlnbold, Options};
 use clap::Args;
 use std::path::PathBuf;
 
-/// Run a script on each project
+/// Run a script on each project.
+///
+/// The command is run with the current working directory set to each
+/// respective project's directory.
+///
+/// The script is run via `perl` for its shebang-handling, so the script need
+/// not be executable, but it does need to have an appropriate shebang.
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Script {
     pub(crate) scriptfile: PathBuf,

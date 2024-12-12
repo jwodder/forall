@@ -3,7 +3,10 @@ use crate::util::{printlnbold, Options};
 use clap::Args;
 use std::ffi::OsString;
 
-/// Run a command on each project
+/// Run a command on each project.
+///
+/// The command is run with the current working directory set to each
+/// respective project's directory.
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Run {
     /// Run command in a shell

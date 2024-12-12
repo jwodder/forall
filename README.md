@@ -122,6 +122,9 @@ Run `git push` on each project for which `HEAD` is ahead of `@{upstream}`
 
 Run the given command on each project.
 
+The command is run with the current working directory set to each respective
+project's directory.
+
 ### Options
 
 - `--shell` — Run the command with `$SHELL -c <command>`
@@ -131,6 +134,10 @@ Run the given command on each project.
 
     forall [<global options>] script <scriptfile>
 
-Run the script `<scriptfile>` on each project.  The script is run via `perl`
-for its shebang-handling, so the script need not be executable, but it does
-need to have an appropriate shebang.
+Run the script `<scriptfile>` on each project.
+
+The script is run with the current working directory set to each respective
+project's directory.
+
+The script is run via `perl` for its shebang-handling, so the script need not
+be executable, but it does need to have an appropriate shebang.
