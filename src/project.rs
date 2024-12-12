@@ -1,5 +1,6 @@
 use crate::cmd::{CommandError, CommandPlus};
 use anyhow::Context;
+use cargo_metadata::{MetadataCommand, TargetKind};
 use fs_err::PathExt;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
@@ -92,7 +93,28 @@ impl Project {
                     Ok(srcs)
                 }
             }
-            Language::Rust => Ok(vec![PathBuf::from("src")]),
+            Language::Rust => {
+                let packages = MetadataCommand::new()
+                    .manifest_path(self.dirpath.join("Cargo.toml"))
+                    .no_deps()
+                    .exec()
+                    .context("failed to get project metadata")?
+                    .packages;
+                let mut srcs = std::collections::HashSet::new();
+                for p in packages {
+                    for t in p.targets {
+                        if t.kind.iter().any(|k| {
+                            matches!(k, TargetKind::Lib | TargetKind::Bin | TargetKind::ProcMacro)
+                        }) {
+                            let Some(pardir) = t.src_path.parent() else {
+                                anyhow::bail!("Could not determine parent directory of src_path {} for project {}", t.src_path, self.name());
+                            };
+                            srcs.insert(pardir.to_owned());
+                        }
+                    }
+                }
+                Ok(srcs.into_iter().map(PathBuf::from).collect())
+            }
         }
     }
 
