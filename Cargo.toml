@@ -11,6 +11,8 @@ exclude = ["/.*"]
 publish = false
 
 [dependencies]
+anstream = "0.6.18"
+anstyle = "1.0.10"
 anyhow = "1.0.94"
 clap = { version = "4.5.23", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"] }
 fs-err = "3.0.0"
