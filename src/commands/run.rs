@@ -9,6 +9,14 @@ use std::ffi::OsString;
 /// respective project's directory.
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Run {
+    /// Treat the command as a path to a script file.
+    ///
+    /// The path is canonicalized, and it is run via `perl` for its shebang
+    /// handling; thus, the script need not be executable, but it does need to
+    /// have an appropriate shebang.
+    #[arg(long, conflicts_with = "shell")]
+    pub(crate) script: bool,
+
     /// Run command in a shell
     #[arg(long)]
     pub(crate) shell: bool,
@@ -24,6 +32,16 @@ impl Run {
             let mut args = Vec::with_capacity(self.command.len().saturating_add(1));
             args.push(OsString::from("-c"));
             args.extend(self.command);
+            (cmd, args)
+        } else if self.script {
+            // Use perl to interpret the script's shebang, thereby supporting
+            // non-executable scripts
+            let cmd = OsString::from("perl");
+            let mut args = Vec::with_capacity(self.command.len());
+            let mut iter = self.command.into_iter();
+            let scriptfile = iter.next().expect("command should be nonempty");
+            args.push(fs_err::canonicalize(scriptfile)?.into_os_string());
+            args.extend(iter);
             (cmd, args)
         } else {
             let mut iter = self.command.into_iter();
