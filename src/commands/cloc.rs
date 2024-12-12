@@ -18,8 +18,8 @@ impl Cloc {
         for p in projects {
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
-                printlnerror(&format!("{}: Could not identify source files", p.name()));
                 if self.keep_going {
+                    printlnerror(&format!("{}: Could not identify source files", p.name()));
                     continue;
                 } else {
                     anyhow::bail!("{}: Could not identify source files", p.name());
