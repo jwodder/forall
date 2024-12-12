@@ -1,19 +1,11 @@
 use crate::project::Project;
-use crate::util::printlnbold;
+use crate::util::{printlnbold, Options};
 use clap::Args;
 use std::ffi::OsString;
 
 /// Run a command on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Run {
-    /// Don't exit on errors
-    #[arg(short, long)]
-    pub(crate) keep_going: bool,
-
-    /// Suppress successful command output
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
     /// Run command in a shell
     #[arg(long)]
     pub(crate) shell: bool,
@@ -23,7 +15,7 @@ pub(crate) struct Run {
 }
 
 impl Run {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let (cmd, args) = if self.shell {
             let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
             let mut args = Vec::with_capacity(self.command.len().saturating_add(1));
@@ -41,8 +33,8 @@ impl Run {
             if !p
                 .runcmd(&cmd)
                 .args(args.iter())
-                .quiet(self.quiet)
-                .keep_going(self.keep_going)
+                .quiet(opts.quiet)
+                .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);

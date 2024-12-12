@@ -5,12 +5,16 @@ mod project;
 mod util;
 use crate::commands::Command;
 use crate::finder::Finder;
+use crate::util::Options;
 use clap::Parser;
 
 /// Operate on each project in a directory
 #[derive(Clone, Debug, Eq, Parser, PartialEq)]
 #[command(version = env!("VERSION_WITH_GIT"))]
 struct Arguments {
+    #[command(flatten)]
+    opts: Options,
+
     #[command(flatten)]
     finder: Finder,
 
@@ -19,9 +23,13 @@ struct Arguments {
 }
 
 fn main() -> anyhow::Result<()> {
-    let Arguments { finder, command } = Arguments::parse();
+    let Arguments {
+        opts,
+        finder,
+        command,
+    } = Arguments::parse();
     let projects = finder.findall()?;
-    command.run(projects)
+    command.run(opts, projects)
 }
 
 #[cfg(test)]
@@ -32,14 +40,12 @@ mod tests {
 
     #[test]
     fn test_run_known_opt() {
-        let args = Arguments::try_parse_from(["arg0", "run", "cmd", "-q"]).unwrap();
+        let args = Arguments::try_parse_from(["arg0", "run", "cmd", "--shell"]).unwrap();
         assert_eq!(
             args.command,
             Command::Run(Run {
-                quiet: false,
-                keep_going: false,
                 shell: false,
-                command: vec![OsString::from("cmd"), OsString::from("-q")],
+                command: vec![OsString::from("cmd"), OsString::from("--shell")],
             })
         );
     }
@@ -50,8 +56,6 @@ mod tests {
         assert_eq!(
             args.command,
             Command::Run(Run {
-                quiet: false,
-                keep_going: false,
                 shell: false,
                 command: vec![OsString::from("cmd"), OsString::from("-x")],
             })

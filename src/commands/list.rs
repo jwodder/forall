@@ -1,4 +1,5 @@
 use crate::project::Project;
+use crate::util::Options;
 use clap::Args;
 use serde_jsonlines::JsonLinesWriter;
 
@@ -11,7 +12,7 @@ pub(crate) struct List {
 }
 
 impl List {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, _opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         if self.json {
             let mut out = JsonLinesWriter::new(std::io::stdout());
             for p in projects {

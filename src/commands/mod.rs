@@ -17,6 +17,7 @@ use self::push::Push;
 pub(crate) use self::run::Run;
 pub(crate) use self::script::Script;
 use crate::project::Project;
+use crate::util::Options;
 use clap::Subcommand;
 
 #[derive(Clone, Debug, Eq, PartialEq, Subcommand)]
@@ -33,17 +34,17 @@ pub(crate) enum Command {
 }
 
 impl Command {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         match self {
-            Command::List(c) => c.run(projects),
-            Command::Clean(c) => c.run(projects),
-            Command::Cloc(c) => c.run(projects),
-            Command::Gc(c) => c.run(projects),
-            Command::PreUpdate(c) => c.run(projects),
-            Command::Pull(c) => c.run(projects),
-            Command::Push(c) => c.run(projects),
-            Command::Run(c) => c.run(projects),
-            Command::Script(c) => c.run(projects),
+            Command::List(c) => c.run(opts, projects),
+            Command::Clean(c) => c.run(opts, projects),
+            Command::Cloc(c) => c.run(opts, projects),
+            Command::Gc(c) => c.run(opts, projects),
+            Command::PreUpdate(c) => c.run(opts, projects),
+            Command::Pull(c) => c.run(opts, projects),
+            Command::Push(c) => c.run(opts, projects),
+            Command::Run(c) => c.run(opts, projects),
+            Command::Script(c) => c.run(opts, projects),
         }
     }
 }

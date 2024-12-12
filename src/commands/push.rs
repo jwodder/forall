@@ -1,21 +1,13 @@
 use crate::project::Project;
-use crate::util::printlnbold;
+use crate::util::{printlnbold, Options};
 use clap::Args;
 
 /// Run `git push` on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Push {
-    /// Don't exit on errors
-    #[arg(short, long)]
-    keep_going: bool,
-
-    /// Suppress successful command output
-    #[arg(short, long)]
-    quiet: bool,
-}
+pub(crate) struct Push;
 
 impl Push {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
             // TODO: If this fails, emit "{BOLD:name}\n{ERROR:[1]}" and handle
@@ -29,8 +21,8 @@ impl Push {
                 if !p
                     .runcmd("git")
                     .arg("push")
-                    .quiet(self.quiet)
-                    .keep_going(self.keep_going)
+                    .quiet(opts.quiet)
+                    .keep_going(opts.keep_going)
                     .run()?
                 {
                     failures.push(p);

@@ -1,25 +1,21 @@
 use crate::cmd::CommandOutputError;
 use crate::project::{Language, Project};
-use crate::util::{printlnbold, printlnerror};
+use crate::util::{printlnbold, printlnerror, Options};
 use anyhow::Context;
 use clap::Args;
 use serde::Deserialize;
 
 /// Count effective lines of code in each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Cloc {
-    /// Don't exit on errors
-    #[arg(short, long)]
-    keep_going: bool,
-}
+pub(crate) struct Cloc;
 
 impl Cloc {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
-                if self.keep_going {
+                if opts.keep_going {
                     printlnerror(&format!("{}: Could not identify source files", p.name()));
                     failures.push(p);
                     continue;
@@ -35,7 +31,7 @@ impl Cloc {
                 .check_output();
             let output = match r {
                 Ok(output) => output,
-                Err(CommandOutputError::Exit { .. }) if self.keep_going => {
+                Err(CommandOutputError::Exit { .. }) if opts.keep_going => {
                     failures.push(p);
                     continue;
                 }

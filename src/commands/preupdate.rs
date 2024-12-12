@@ -1,6 +1,6 @@
 use crate::cmd::CommandError;
 use crate::project::Project;
-use crate::util::printlnbold;
+use crate::util::{printlnbold, Options};
 use clap::Args;
 use fs_err::PathExt;
 
@@ -8,18 +8,10 @@ static PRE_COMMIT_FILE: &str = ".pre-commit-config.yaml";
 
 /// Update .pre-commit-config.yaml files
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub(crate) struct PreUpdate {
-    /// Don't exit on errors
-    #[arg(short, long)]
-    keep_going: bool,
-
-    /// Suppress successful command output
-    #[arg(short, long)]
-    quiet: bool,
-}
+pub(crate) struct PreUpdate;
 
 impl PreUpdate {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
@@ -30,8 +22,8 @@ impl PreUpdate {
             if !p
                 .runcmd("pre-commit")
                 .arg("autoupdate")
-                .quiet(self.quiet)
-                .keep_going(self.keep_going)
+                .quiet(opts.quiet)
+                .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);
@@ -51,7 +43,7 @@ impl PreUpdate {
             if !p
                 .runcmd("pre-commit")
                 .args(["run", "-a"])
-                .keep_going(self.keep_going)
+                .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);
@@ -63,8 +55,8 @@ impl PreUpdate {
                     p.runcmd("git")
                         .args(["commit", "-m"])
                         .arg(format!("Autoupdate {PRE_COMMIT_FILE}"))
-                        .quiet(self.quiet)
-                        .keep_going(self.keep_going)
+                        .quiet(opts.quiet)
+                        .keep_going(opts.keep_going)
                         .run()?;
                 }
                 Err(e) => return Err(e.into()),
