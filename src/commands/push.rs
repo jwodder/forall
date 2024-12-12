@@ -16,18 +16,31 @@ pub(crate) struct Push {
 
 impl Push {
     pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+        let mut failures = Vec::new();
         for p in projects {
+            // TODO: If this fails, emit "{BOLD:name}\n{ERROR:[1]}" and handle
+            // with keep_going:
             let ahead = p.readcmd(
                 "git",
                 ["rev-list", "--count", "--right-only", "@{upstream}...HEAD"],
             )?;
             if ahead.parse::<usize>().unwrap_or_default() > 0 {
                 printlnbold(p.name());
-                p.runcmd("git")
+                if !p
+                    .runcmd("git")
                     .arg("push")
                     .quiet(self.quiet)
                     .keep_going(self.keep_going)
-                    .run()?;
+                    .run()?
+                {
+                    failures.push(p);
+                }
+            }
+        }
+        if !failures.is_empty() {
+            printlnbold("\nFailures:");
+            for p in failures {
+                println!("{}", p.name());
             }
         }
         Ok(())

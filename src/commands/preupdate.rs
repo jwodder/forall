@@ -10,20 +10,12 @@ static PRE_COMMIT_FILE: &str = ".pre-commit-config.yaml";
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PreUpdate {
     /// Don't exit on errors
-    #[arg(
-        short,
-        long,
-        default_value_if("show_failures", clap::builder::ArgPredicate::IsPresent, "true")
-    )]
+    #[arg(short, long)]
     keep_going: bool,
 
     /// Suppress successful command output
     #[arg(short, long)]
     quiet: bool,
-
-    /// List failures at end of run.  Implies `--keep-going`.
-    #[arg(short = 'F', long)]
-    show_failures: bool,
 }
 
 impl PreUpdate {
@@ -42,7 +34,7 @@ impl PreUpdate {
                 .keep_going(self.keep_going)
                 .run()?
             {
-                failures.push(p.name().to_owned());
+                failures.push(p);
                 continue;
             }
             p.runcmd("git").args(["add", PRE_COMMIT_FILE]).run()?;
@@ -62,7 +54,7 @@ impl PreUpdate {
                 .keep_going(self.keep_going)
                 .run()?
             {
-                failures.push(p.name().to_owned());
+                failures.push(p);
                 continue;
             }
             match p.runcmd("git").args(["diff", "--cached", "--quiet"]).run() {
@@ -78,10 +70,10 @@ impl PreUpdate {
                 Err(e) => return Err(e.into()),
             }
         }
-        if !failures.is_empty() && self.show_failures {
+        if !failures.is_empty() {
             printlnbold("\nFailures:");
-            for name in failures {
-                println!("{name}");
+            for p in failures {
+                println!("{}", p.name());
             }
         }
         Ok(())
