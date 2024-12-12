@@ -1,24 +1,16 @@
 use crate::project::Project;
-use crate::util::printlnbold;
+use crate::util::{printlnbold, Options};
 use clap::Args;
 use std::path::PathBuf;
 
 /// Run a script on each project
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Script {
-    /// Don't exit on errors
-    #[arg(short, long)]
-    pub(crate) keep_going: bool,
-
-    /// Suppress successful command output
-    #[arg(short, long)]
-    pub(crate) quiet: bool,
-
     pub(crate) scriptfile: PathBuf,
 }
 
 impl Script {
-    pub(crate) fn run(self, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let scriptfile = fs_err::canonicalize(self.scriptfile)?;
         let mut failures = Vec::new();
         for p in projects {
@@ -28,8 +20,8 @@ impl Script {
             if !p
                 .runcmd("perl")
                 .arg(&scriptfile)
-                .quiet(self.quiet)
-                .keep_going(self.keep_going)
+                .quiet(opts.quiet)
+                .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);

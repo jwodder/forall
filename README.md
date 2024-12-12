@@ -31,8 +31,15 @@ subcommand.
 - `-f <shellcmd>`, `--filter <shellcmd>` — Run `$SHELL -c <shellcmd>` in each
   project and only operate on those for which the command succeeds
 
+- `-k`, `--keep-going` — By default, if a subcommand fails for a project,
+  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
+  will instead continue with the remaining projects and will print a list of
+  all failures on exit.
+
 - `--no-def-branch` — Only operate on projects currently not on their default
   branch
+
+- `-q`, `--quiet` — Suppress successful command output
 
 - `--root <dirpath>` — Start traversing from `<dirpath>` [default: the current
   working directory
@@ -65,90 +72,48 @@ Print the name of each project in the directory tree in sorted order.
 `forall clean`
 -------------
 
-    forall [<global options>] clean [<options>]
+    forall [<global options>] clean
 
 Run `git clean -dXf` on each project that needs it
-
-### Options
-
-- `-q`, `--quiet` — Suppress successful command output
 
 `forall cloc`
 -------------
 
-    forall [<global options>] cloc [<options>]
+    forall [<global options>] cloc
 
 Use [`cloc`](https://github.com/AlDanial/cloc/) to count the number of
 effective lines in each project, and output a simple table of the results.
 
-### Options
-
-- `-k`, `--keep-going` — By default, if `cloc` fails for a project, `forall`
-  terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects and will print a list of all failures on
-  exit.
-
 `forall gc`
 -----------
 
-    forall [<global options>] gc [<options>]
+    forall [<global options>] gc
 
 Run `git gc` on each project
-
-### Options
-
-- `-q`, `--quiet` — Suppress successful command output
 
 `forall pre-update`
 -------------------
 
-    forall [<global options>] pre-update [<options>]
+    forall [<global options>] pre-update
 
 Run `pre-commit autoupdate` on all projects with `.pre-commit-config.yaml`
 files.  `pre-commit run -a` is then run to apply any new formatting, followed
 by a second `pre-commit run -a` to ensure that linting is still successful.
 Any & all changes are then committed.
 
-### Options
-
-- `-k`, `--keep-going` — By default, if the `pre-commit autoupdate` or second
-  `precommit run -a` invocation fails, `forall` terminates immediately.  If
-  `--keep-going` is supplied, `forall` will instead continue with the remaining
-  projects and will print a list of all failures on exit.
-
-- `-q`, `--quiet` — Suppress successful command output
-
 `forall pull`
 -------------
 
-    forall [<global options>] pull [<options>]
+    forall [<global options>] pull
 
 Run `git pull` on each project
-
-### Options
-
-- `-k`, `--keep-going` — By default, if a `git pull` invocation fails, `forall`
-  terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects and will print a list of all failures on
-  exit.
-
-- `-q`, `--quiet` — Suppress successful command output
 
 `forall push`
 -------------
 
-    forall [<global options>] push [<options>]
+    forall [<global options>] push
 
 Run `git push` on each project for which `HEAD` is ahead of `@{upstream}`
-
-### Options
-
-- `-k`, `--keep-going` — By default, if a `git push` invocation fails, `forall`
-  terminates immediately.  If `--keep-going` is supplied, `forall` will instead
-  continue with the remaining projects and will print a list of all failures on
-  exit.
-
-- `-q`, `--quiet` — Suppress successful command output
 
 `forall run`
 ------------
@@ -159,29 +124,13 @@ Run the given command on each project.
 
 ### Options
 
-- `-k`, `--keep-going` — By default, if the command fails for a project,
-  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects and will print a list of
-  all failures on exit.
-
-- `-q`, `--quiet` — Suppress successful command output
-
 - `--shell` — Run the command with `$SHELL -c <command>`
 
 `forall script`
 ---------------
 
-    forall [<global options>] script [<options>] <scriptfile>
+    forall [<global options>] script <scriptfile>
 
 Run the script `<scriptfile>` on each project.  The script is run via `perl`
 for its shebang-handling, so the script need not be executable, but it does
 need to have an appropriate shebang.
-
-### Options
-
-- `-k`, `--keep-going` — By default, if the script fails for a project,
-  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects and will print a list of
-  all failures on exit.
-
-- `-q`, `--quiet` — Suppress successful command output
