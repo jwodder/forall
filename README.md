@@ -4,7 +4,7 @@
 [![Minimum Supported Rust Version](https://img.shields.io/badge/MSRV-1.79-orange)](https://www.rust-lang.org)
 [![MIT License](https://img.shields.io/github/license/jwodder/forall.svg)](https://opensource.org/licenses/MIT)
 
-[GitHub](https://github.com/jwodder/forall) | [Issues](https://github.com/jwodder/forall/issues)
+[GitHub](https://github.com/jwodder/forall) | [Issues](https://github.com/jwodder/forall/issues) | [Changelog](https://github.com/jwodder/forall/blob/main/CHANGELOG.md)
 
 `forall` is a [Rust](https://www.rust-lang.org) program for performing various
 operations on multiple local Git repositories at once.  It traverses a
