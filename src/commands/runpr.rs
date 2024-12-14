@@ -1,3 +1,4 @@
+use crate::github::{CreatePullRequest, GitHub};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
@@ -11,12 +12,16 @@ pub(crate) struct RunPr {
     #[arg(short, long)]
     branch: Option<String>,
 
+    #[arg(short, long, required = true)]
+    message: String,
+
     #[command(flatten)]
     pub(crate) run_opts: RunOpts,
 }
 
 impl RunPr {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
+        let github = GitHub::authed()?;
         let branch = match self.branch {
             Some(b) => b,
             None => OffsetDateTime::now_local()
@@ -45,12 +50,33 @@ impl RunPr {
                 failures.push(p);
                 continue;
             }
+            if p.has_changes()? {
+                p.runcmd("git")
+                    .arg("commit")
+                    .arg("-a")
+                    .arg("-m")
+                    .arg(&self.message)
+                    .quiet(opts.quiet)
+                    .run()?;
+            } else {
+                continue;
+            }
             p.runcmd("git")
                 .args(["push", "--set-upstream", "origin"])
                 .arg(&branch)
                 .quiet(opts.quiet)
                 .run()?;
-            todo!("Create PR");
+            let pr = github.create_pull_request(
+                ghrepo,
+                CreatePullRequest {
+                    title: self.message.clone(),
+                    head: branch.clone(),
+                    base: defbranch.to_owned(),
+                    body: None, // TODO
+                    maintainer_can_modify: true,
+                },
+            )?;
+            println!("{}", pr.html_url); // TODO: Improve?
         }
         if !failures.is_empty() {
             boldln!("\nFailures:");
