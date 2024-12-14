@@ -6,13 +6,17 @@
 
 [GitHub](https://github.com/jwodder/forall) | [Issues](https://github.com/jwodder/forall/issues) | [Changelog](https://github.com/jwodder/forall/blob/main/CHANGELOG.md)
 
-`forall` is a [Rust](https://www.rust-lang.org) program for performing various
-operations on multiple local Git repositories at once.  It traverses a
-directory tree looking for projects and runs a specified command on each of
-them, possibly after excluding certain projects.
+`forall` is my personal [Rust](https://www.rust-lang.org) program for
+performing various operations on multiple local Git repositories at once.  It
+traverses a directory tree looking for projects and runs a specified command on
+each of them, possibly after excluding certain projects.
 
 Currently, only Git repositories containing Rust projects or
 `pyproject.toml`-based Python projects are supported.
+
+While this program may in theory be suitable for general use, I make no
+guarantees, nor do I intend to release it for general consumption.  Use at your
+own risk.
 
 Usage
 =====
