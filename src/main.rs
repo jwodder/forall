@@ -38,6 +38,7 @@ fn main() -> anyhow::Result<()> {
 mod tests {
     use super::*;
     use crate::commands::Run;
+    use crate::util::RunOpts;
     use std::ffi::OsString;
 
     #[test]
@@ -46,9 +47,11 @@ mod tests {
         assert_eq!(
             args.command,
             Command::Run(Run {
-                script: false,
-                shell: false,
-                command: vec![OsString::from("cmd"), OsString::from("--shell")],
+                run_opts: RunOpts {
+                    script: false,
+                    shell: false,
+                    command: vec![OsString::from("cmd"), OsString::from("--shell")],
+                }
             })
         );
     }
@@ -59,9 +62,11 @@ mod tests {
         assert_eq!(
             args.command,
             Command::Run(Run {
-                script: false,
-                shell: false,
-                command: vec![OsString::from("cmd"), OsString::from("-x")],
+                run_opts: RunOpts {
+                    script: false,
+                    shell: false,
+                    command: vec![OsString::from("cmd"), OsString::from("-x")],
+                }
             })
         );
     }

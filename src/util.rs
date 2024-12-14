@@ -1,8 +1,11 @@
-use crate::cmd::{CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
+use crate::project::Project;
 use anstyle::Style;
 use clap::Args;
 use ghrepo::GHRepo;
+use std::ffi::OsString;
 use std::path::Path;
+use thiserror::Error;
 
 #[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Options {
@@ -13,6 +16,79 @@ pub(crate) struct Options {
     /// Suppress successful command output
     #[arg(short, long, global = true)]
     pub(crate) quiet: bool,
+}
+
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct RunOpts {
+    /// Treat the command as a path to a script file.
+    ///
+    /// The path is canonicalized, and it is run via `perl` for its shebang
+    /// handling; thus, the script need not be executable, but it does need to
+    /// have an appropriate shebang.
+    #[arg(long, conflicts_with = "shell")]
+    pub(crate) script: bool,
+
+    /// Run command in a shell
+    #[arg(long)]
+    pub(crate) shell: bool,
+
+    #[arg(allow_hyphen_values = true, trailing_var_arg = true, required = true)]
+    pub(crate) command: Vec<OsString>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct Runner {
+    command: OsString,
+    args: Vec<OsString>,
+}
+
+impl Runner {
+    pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
+        p.runcmd(&self.command)
+            .args(self.args.iter())
+            .quiet(opts.quiet)
+            .keep_going(opts.keep_going)
+            .run()
+    }
+}
+
+impl TryFrom<RunOpts> for Runner {
+    type Error = RunOptsError;
+
+    fn try_from(value: RunOpts) -> Result<Runner, RunOptsError> {
+        let (command, args) = if value.shell {
+            let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
+            let mut args = Vec::with_capacity(value.command.len().saturating_add(1));
+            args.push(OsString::from("-c"));
+            args.extend(value.command);
+            (cmd, args)
+        } else if value.script {
+            // Use perl to interpret the script's shebang, thereby supporting
+            // non-executable scripts
+            let cmd = OsString::from("perl");
+            let mut args = Vec::with_capacity(value.command.len());
+            let mut iter = value.command.into_iter();
+            let scriptfile = iter.next().expect("command should be nonempty");
+            args.push(
+                fs_err::canonicalize(scriptfile)
+                    .map_err(RunOptsError::Canonicalize)?
+                    .into_os_string(),
+            );
+            args.extend(iter);
+            (cmd, args)
+        } else {
+            let mut iter = value.command.into_iter();
+            let cmd = iter.next().expect("command should be nonempty");
+            (cmd, iter.collect())
+        };
+        Ok(Runner { command, args })
+    }
+}
+
+#[derive(Debug, Error)]
+pub(crate) enum RunOptsError {
+    #[error("failed to canonicalize script path")]
+    Canonicalize(#[from] std::io::Error),
 }
 
 macro_rules! boldln {
