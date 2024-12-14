@@ -6,6 +6,7 @@ mod preupdate;
 mod pull;
 mod push;
 mod run;
+mod runpr;
 use self::clean::Clean;
 use self::cloc::Cloc;
 use self::gc::Gc;
@@ -14,6 +15,7 @@ use self::preupdate::PreUpdate;
 use self::pull::Pull;
 use self::push::Push;
 pub(crate) use self::run::Run;
+use self::runpr::RunPr;
 use crate::project::Project;
 use crate::util::Options;
 use clap::Subcommand;
@@ -28,6 +30,7 @@ pub(crate) enum Command {
     Pull(Pull),
     Push(Push),
     Run(Run),
+    RunPr(RunPr),
 }
 
 impl Command {
@@ -41,6 +44,7 @@ impl Command {
             Command::Pull(c) => c.run(opts, projects),
             Command::Push(c) => c.run(opts, projects),
             Command::Run(c) => c.run(opts, projects),
+            Command::RunPr(c) => c.run(opts, projects),
         }
     }
 }

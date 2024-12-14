@@ -5,10 +5,13 @@ use cargo_metadata::{MetadataCommand, TargetKind};
 use fs_err::PathExt;
 use ghrepo::GHRepo;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use thiserror::Error;
+
+static DEFAULT_BRANCHES: &[&str] = &["main", "master"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Project {
@@ -70,9 +73,27 @@ impl Project {
         self.ghrepo.is_some()
     }
 
+    pub(crate) fn ghrepo(&self) -> Option<&GHRepo> {
+        self.ghrepo.as_ref()
+    }
+
     pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
         let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
-        Ok(current == "main" || current == "master")
+        Ok(DEFAULT_BRANCHES.iter().any(|&b| b == current))
+    }
+
+    pub(crate) fn default_branch(&self) -> anyhow::Result<&'static str> {
+        let branches = self
+            .readcmd("branch", ["--format=%(refname:short)"])?
+            .lines()
+            .map(ToString::to_string)
+            .collect::<HashSet<_>>();
+        for &guess in DEFAULT_BRANCHES {
+            if branches.contains(guess) {
+                return Ok(guess);
+            }
+        }
+        anyhow::bail!("Could not determine default branch for {}", self.name())
     }
 
     pub(crate) fn to_details(&self) -> anyhow::Result<ProjectDetails> {
@@ -111,7 +132,7 @@ impl Project {
                     .exec()
                     .context("failed to get project metadata")?
                     .packages;
-                let mut srcs = std::collections::HashSet::new();
+                let mut srcs = HashSet::new();
                 for p in packages {
                     for t in p.targets {
                         if t.kind.iter().any(|k| {
