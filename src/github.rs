@@ -2,6 +2,7 @@ use crate::http_util::StatusError;
 use anyhow::Context;
 use ghrepo::GHRepo;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::borrow::Cow;
 use std::fmt;
 use ureq::{Agent, AgentBuilder};
 use url::Url;
@@ -85,7 +86,7 @@ impl GitHub {
     pub(crate) fn create_pull_request<R>(
         &self,
         repo: &R,
-        pr: CreatePullRequest,
+        pr: CreatePullRequest<'_>,
     ) -> anyhow::Result<PullRequest>
     where
         for<'a> R: RepositoryEndpoint<'a>,
@@ -116,12 +117,12 @@ impl<'a> RepositoryEndpoint<'a> for GHRepo {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-pub(crate) struct CreatePullRequest {
-    pub(crate) title: String,
-    pub(crate) head: String,
-    pub(crate) base: String,
+pub(crate) struct CreatePullRequest<'a> {
+    pub(crate) title: Cow<'a, str>,
+    pub(crate) head: Cow<'a, str>,
+    pub(crate) base: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) body: Option<String>,
+    pub(crate) body: Option<Cow<'a, str>>,
     pub(crate) maintainer_can_modify: bool,
 }
 

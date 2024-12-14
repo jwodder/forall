@@ -2,6 +2,7 @@ use crate::github::{CreatePullRequest, GitHub};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
+use std::borrow::Cow;
 use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
 
 static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
@@ -69,9 +70,9 @@ impl RunPr {
             let pr = github.create_pull_request(
                 ghrepo,
                 CreatePullRequest {
-                    title: self.message.clone(),
-                    head: branch.clone(),
-                    base: defbranch.to_owned(),
+                    title: Cow::from(&self.message),
+                    head: Cow::from(&branch),
+                    base: Cow::from(defbranch),
                     body: None, // TODO
                     maintainer_can_modify: true,
                 },
