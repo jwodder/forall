@@ -9,6 +9,9 @@ use std::path::PathBuf;
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Finder {
     /// Only operate on projects for which the given shell command succeeds
+    ///
+    /// The command is run with the current working directory set to each
+    /// respective project's directory.
     #[arg(short, long, value_name = "SHELLCMD", global = true)]
     filter: Option<String>,
 
