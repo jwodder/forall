@@ -2,11 +2,15 @@ use crate::cmd::{CommandError, CommandPlus};
 use anyhow::Context;
 use cargo_metadata::{MetadataCommand, TargetKind};
 use fs_err::PathExt;
+use ghrepo::{GHRepo, LocalRepo, LocalRepoError};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use thiserror::Error;
+
+static DEFAULT_BRANCHES: &[&str] = &["main", "master"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Project {
@@ -62,7 +66,34 @@ impl Project {
 
     pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
         let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
-        Ok(current == "main" || current == "master")
+        Ok(DEFAULT_BRANCHES.iter().any(|&b| b == current))
+    }
+
+    pub(crate) fn default_branch(&self) -> anyhow::Result<&'static str> {
+        let branches = self
+            .readcmd("branch", ["--format=%(refname:short)"])?
+            .lines()
+            .map(ToString::to_string)
+            .collect::<HashSet<_>>();
+        for &guess in DEFAULT_BRANCHES {
+            if branches.contains(guess) {
+                return Ok(guess);
+            }
+        }
+        anyhow::bail!("Could not determine default branch for {}", self.name())
+    }
+
+    pub(crate) fn ghrepo(&self) -> anyhow::Result<Option<GHRepo>> {
+        let repo = LocalRepo::new(self.dirpath());
+        match repo.github_remote("origin") {
+            Ok(ghr) => Ok(Some(ghr)),
+            Err(
+                LocalRepoError::NoSuchRemote(_)
+                | LocalRepoError::InvalidUtf8(_)
+                | LocalRepoError::InvalidRemoteURL(_),
+            ) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
     pub(crate) fn to_details(&self) -> anyhow::Result<ProjectDetails> {
@@ -100,7 +131,7 @@ impl Project {
                     .exec()
                     .context("failed to get project metadata")?
                     .packages;
-                let mut srcs = std::collections::HashSet::new();
+                let mut srcs = HashSet::new();
                 for p in packages {
                     for t in p.targets {
                         if t.kind.iter().any(|k| {
@@ -118,11 +149,15 @@ impl Project {
         }
     }
 
-    pub(crate) fn stash(&self) -> anyhow::Result<()> {
-        if !self
+    pub(crate) fn has_changes(&self) -> anyhow::Result<bool> {
+        // TODO: Should --ignore-submodules be set to something?
+        Ok(!self
             .readcmd("git", ["status", "--porcelain", "-uno"])?
-            .is_empty()
-        {
+            .is_empty())
+    }
+
+    pub(crate) fn stash(&self) -> anyhow::Result<()> {
+        if self.has_changes()? {
             self.runcmd("git").arg("stash").run()?;
         }
         Ok(())
@@ -276,5 +311,5 @@ struct Workspace {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 struct WorkspacePackage {
-    repository: ghrepo::GHRepo,
+    repository: GHRepo,
 }
