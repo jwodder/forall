@@ -1,8 +1,10 @@
+#[macro_use]
+mod util;
+
 mod cmd;
 mod commands;
 mod finder;
 mod project;
-mod util;
 use crate::commands::Command;
 use crate::finder::Finder;
 use crate::util::Options;

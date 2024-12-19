@@ -1,4 +1,3 @@
-use crate::util::printlnerror;
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -88,11 +87,10 @@ impl CommandPlus {
         if rc.success() {
             Ok(true)
         } else if self.keep_going {
-            let s = match rc.code() {
-                Some(code) => format!("[{code}]"),
-                None => format!("[{rc}]"),
-            };
-            printlnerror(&s);
+            match rc.code() {
+                Some(code) => errorln!("[{code}]"),
+                None => errorln!("[{rc}]"),
+            }
             Ok(false)
         } else {
             Err(CommandError::Exit {

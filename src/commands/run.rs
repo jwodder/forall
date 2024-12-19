@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 use std::ffi::OsString;
 
@@ -50,7 +50,7 @@ impl Run {
         };
         let mut failures = Vec::new();
         for p in projects {
-            printlnbold(p.name());
+            boldln!("{}", p.name());
             if !p
                 .runcmd(&cmd)
                 .args(args.iter())
@@ -62,7 +62,7 @@ impl Run {
             }
         }
         if !failures.is_empty() {
-            printlnbold("\nFailures:");
+            boldln!("\nFailures:");
             for p in failures {
                 println!("{}", p.name());
             }

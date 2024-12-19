@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 
 /// Run `git push` on each project
@@ -17,7 +17,7 @@ impl Push {
                 ["rev-list", "--count", "--right-only", "@{upstream}...HEAD"],
             )?;
             if ahead.parse::<usize>().unwrap_or_default() > 0 {
-                printlnbold(p.name());
+                boldln!("{}", p.name());
                 if !p
                     .runcmd("git")
                     .arg("push")
@@ -30,7 +30,7 @@ impl Push {
             }
         }
         if !failures.is_empty() {
-            printlnbold("\nFailures:");
+            boldln!("\nFailures:");
             for p in failures {
                 println!("{}", p.name());
             }

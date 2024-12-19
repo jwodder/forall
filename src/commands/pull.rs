@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 
 /// Run `git pull` on each project
@@ -10,7 +10,7 @@ impl Pull {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
-            printlnbold(p.name());
+            boldln!("{}", p.name());
             if !p
                 .runcmd("git")
                 .arg("pull")
@@ -22,7 +22,7 @@ impl Pull {
             }
         }
         if !failures.is_empty() {
-            printlnbold("\nFailures:");
+            boldln!("\nFailures:");
             for p in failures {
                 println!("{}", p.name());
             }
