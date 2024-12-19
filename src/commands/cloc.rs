@@ -1,6 +1,6 @@
 use crate::cmd::CommandOutputError;
 use crate::project::{Language, Project};
-use crate::util::{printlnbold, printlnerror, Options};
+use crate::util::Options;
 use anyhow::Context;
 use clap::Args;
 use serde::Deserialize;
@@ -16,7 +16,7 @@ impl Cloc {
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
                 if opts.keep_going {
-                    printlnerror(&format!("{}: Could not identify source files", p.name()));
+                    errorln!("{}: Could not identify source files", p.name());
                     failures.push(p);
                     continue;
                 } else {
@@ -43,7 +43,7 @@ impl Cloc {
             println!("{lines:6} {}", p.name());
         }
         if !failures.is_empty() {
-            printlnbold("\nFailures:");
+            boldln!("\nFailures:");
             for p in failures {
                 println!("{}", p.name());
             }

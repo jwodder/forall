@@ -1,6 +1,6 @@
 use crate::cmd::CommandError;
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 use fs_err::PathExt;
 
@@ -17,7 +17,7 @@ impl PreUpdate {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
                 continue;
             }
-            printlnbold(p.name());
+            boldln!("{}", p.name());
             p.stash()?;
             if !p
                 .runcmd("pre-commit")
@@ -63,7 +63,7 @@ impl PreUpdate {
             }
         }
         if !failures.is_empty() {
-            printlnbold("\nFailures:");
+            boldln!("\nFailures:");
             for p in failures {
                 println!("{}", p.name());
             }

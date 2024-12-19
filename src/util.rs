@@ -1,4 +1,4 @@
-use anstyle::{AnsiColor, Style};
+use anstyle::Style;
 use clap::Args;
 
 #[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
@@ -12,14 +12,21 @@ pub(crate) struct Options {
     pub(crate) quiet: bool,
 }
 
-pub(crate) fn printlnbold(s: &str) {
-    printlnstyled(s, Style::new().bold());
+macro_rules! boldln {
+    ($($arg:tt)*) => {{
+        $crate::util::styleln(anstyle::Style::new().bold(), format_args!($($arg)*));
+    }};
 }
 
-pub(crate) fn printlnerror(s: &str) {
-    printlnstyled(s, Style::new().fg_color(Some(AnsiColor::Red.into())).bold());
+macro_rules! errorln {
+    ($($arg:tt)*) => {{
+        $crate::util::styleln(
+            anstyle::Style::new().bold().fg_color(Some(anstyle::AnsiColor::Red.into())),
+            format_args!($($arg)*)
+        );
+    }};
 }
 
-fn printlnstyled(s: &str, style: Style) {
-    anstream::println!("{style}{s}{style:#}");
+pub(crate) fn styleln(style: Style, fmtargs: std::fmt::Arguments<'_>) {
+    anstream::println!("{style}{fmtargs}{style:#}");
 }

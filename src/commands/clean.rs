@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 
 /// Run `git clean -dXf` on each project
@@ -10,7 +10,7 @@ impl Clean {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
             if !p.readcmd("git", ["clean", "-dXn"])?.is_empty() {
-                printlnbold(p.name());
+                boldln!("{}", p.name());
                 p.runcmd("git")
                     .args(["clean", "-dXf"])
                     .quiet(opts.quiet)

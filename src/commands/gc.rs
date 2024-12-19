@@ -1,5 +1,5 @@
 use crate::project::Project;
-use crate::util::{printlnbold, Options};
+use crate::util::Options;
 use clap::Args;
 
 /// Run `git gc` on each project
@@ -9,7 +9,7 @@ pub(crate) struct Gc;
 impl Gc {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
-            printlnbold(p.name());
+            boldln!("{}", p.name());
             p.runcmd("git").arg("gc").quiet(opts.quiet).run()?;
         }
         Ok(())
