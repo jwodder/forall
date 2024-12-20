@@ -3,6 +3,7 @@ use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
 use std::borrow::Cow;
+use std::path::PathBuf;
 use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
 
 static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
@@ -19,6 +20,9 @@ pub(crate) struct RunPr {
     #[arg(short = 'T', long)]
     pr_title: Option<String>,
 
+    #[arg(short = 'B', long)]
+    pr_body_file: Option<PathBuf>,
+
     #[command(flatten)]
     pub(crate) run_opts: RunOpts,
 }
@@ -34,6 +38,10 @@ impl RunPr {
                 .expect("formatting a datetime should not fail"),
         };
         let pr_title = self.pr_title.as_deref().unwrap_or(&self.message);
+        let pr_body = match self.pr_body_file {
+            Some(p) => Some(fs_err::read_to_string(p)?),
+            None => None,
+        };
         let runner = Runner::try_from(self.run_opts)?;
         let mut failures = Vec::new();
         for p in projects {
@@ -77,7 +85,7 @@ impl RunPr {
                     title: Cow::from(pr_title),
                     head: Cow::from(&branch),
                     base: Cow::from(defbranch),
-                    body: None, // TODO
+                    body: pr_body.as_deref().map(Cow::from),
                     maintainer_can_modify: true,
                 },
             )?;
