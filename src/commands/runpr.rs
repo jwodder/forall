@@ -37,7 +37,10 @@ impl RunPr {
                 .format(&DEFAULT_BRANCH_FORMAT)
                 .expect("formatting a datetime should not fail"),
         };
-        let pr_title = self.pr_title.as_deref().unwrap_or(&self.message);
+        let pr_title = self
+            .pr_title
+            .as_deref()
+            .unwrap_or_else(|| strip_skip(&self.message));
         let pr_body = match self.pr_body_file {
             Some(p) => Some(fs_err::read_to_string(p)?),
             None => None,
@@ -98,5 +101,48 @@ impl RunPr {
             }
         }
         Ok(())
+    }
+}
+
+fn strip_skip(mut s: &str) -> &str {
+    // <https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/skipping-workflow-runs>
+    // TODO: Delete skip strings in the middle of a commit message
+    for skipper in [
+        "[skip ci]",
+        "[ci skip]",
+        "[no ci]",
+        "[skip actions]",
+        "[actions skip]",
+    ] {
+        s = s.strip_prefix(skipper).unwrap_or(s);
+        s = s.strip_suffix(skipper).unwrap_or(s);
+        s = s.trim();
+    }
+    s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case("Foo some bars", "Foo some bars")]
+    #[case("[skip ci] Foo some bars", "Foo some bars")]
+    #[case("Foo some bars [skip ci]", "Foo some bars")]
+    #[case("[ci skip] Foo some bars", "Foo some bars")]
+    #[case("Foo some bars [ci skip]", "Foo some bars")]
+    #[case("[no ci] Foo some bars", "Foo some bars")]
+    #[case("Foo some bars [no ci]", "Foo some bars")]
+    #[case("[skip actions] Foo some bars", "Foo some bars")]
+    #[case("Foo some bars [skip actions]", "Foo some bars")]
+    #[case("[actions skip] Foo some bars", "Foo some bars")]
+    #[case("Foo some bars [actions skip]", "Foo some bars")]
+    #[case("[skip] Foo some bars", "[skip] Foo some bars")]
+    #[case("[ci] Foo some bars", "[ci] Foo some bars")]
+    #[case("[skipci] Foo some bars", "[skipci] Foo some bars")]
+    #[case("skip ci Foo some bars", "skip ci Foo some bars")]
+    fn test_strip_skip(#[case] before: &str, #[case] after: &str) {
+        assert_eq!(strip_skip(before), after);
     }
 }
