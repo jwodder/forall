@@ -16,6 +16,9 @@ pub(crate) struct RunPr {
     #[arg(short, long, required = true)]
     message: String,
 
+    #[arg(short = 'T', long)]
+    pr_title: Option<String>,
+
     #[command(flatten)]
     pub(crate) run_opts: RunOpts,
 }
@@ -30,6 +33,7 @@ impl RunPr {
                 .format(&DEFAULT_BRANCH_FORMAT)
                 .expect("formatting a datetime should not fail"),
         };
+        let pr_title = self.pr_title.as_deref().unwrap_or(&self.message);
         let runner = Runner::try_from(self.run_opts)?;
         let mut failures = Vec::new();
         for p in projects {
@@ -70,7 +74,7 @@ impl RunPr {
             let pr = github.create_pull_request(
                 ghrepo,
                 CreatePullRequest {
-                    title: Cow::from(&self.message),
+                    title: Cow::from(pr_title),
                     head: Cow::from(&branch),
                     base: Cow::from(defbranch),
                     body: None, // TODO
