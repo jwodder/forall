@@ -55,7 +55,7 @@ impl TryFrom<RunOpts> for Runner {
 
     fn try_from(value: RunOpts) -> Result<Runner, RunOptsError> {
         let (command, args) = if value.shell {
-            let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
+            let cmd = get_shell();
             let mut args = Vec::with_capacity(value.command.len().saturating_add(1));
             args.push(OsString::from("-c"));
             args.extend(value.command);
@@ -106,4 +106,8 @@ macro_rules! errorln {
 
 pub(crate) fn styleln(style: Style, fmtargs: std::fmt::Arguments<'_>) {
     anstream::println!("{style}{fmtargs}{style:#}");
+}
+
+pub(crate) fn get_shell() -> OsString {
+    std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"))
 }
