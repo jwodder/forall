@@ -57,7 +57,7 @@ impl TryFrom<RunOpts> for Runner {
 
     fn try_from(value: RunOpts) -> Result<Runner, RunOptsError> {
         let (command, args) = if value.shell {
-            let cmd = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
+            let cmd = get_shell();
             let mut args = Vec::with_capacity(value.command.len().saturating_add(1));
             args.push(OsString::from("-c"));
             args.extend(value.command);
@@ -125,4 +125,8 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
         Err(CommandOutputError::Exit { rc, .. }) if rc.code() == Some(2) => Ok(None),
         Err(e) => Err(e.into()),
     }
+}
+
+pub(crate) fn get_shell() -> OsString {
+    std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"))
 }
