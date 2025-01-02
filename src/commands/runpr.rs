@@ -66,17 +66,27 @@ impl RunPr {
                 failures.push(p);
                 continue;
             }
-            if p.has_changes()? {
+            // XXX: When adding support for commands that commit, also check
+            //      whether $branch is ahead of $defbranch.
+            if !p.has_changes()? {
+                println!("> No changes"); // TODO: Style output?
                 p.runcmd("git")
-                    .arg("commit")
-                    .arg("-a")
-                    .arg("-m")
-                    .arg(&self.message)
+                    .arg("checkout")
+                    .arg(defbranch)
                     .quiet(opts.quiet)
                     .run()?;
-            } else {
+                p.runcmd("git")
+                    .args(["branch", "-d"])
+                    .arg(&branch)
+                    .quiet(opts.quiet)
+                    .run()?;
                 continue;
             }
+            p.runcmd("git")
+                .args(["commit", "-a", "-m"])
+                .arg(&self.message)
+                .quiet(opts.quiet)
+                .run()?;
             p.runcmd("git")
                 .args(["push", "--set-upstream", "origin"])
                 .arg(&branch)
