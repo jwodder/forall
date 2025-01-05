@@ -82,8 +82,9 @@ impl RunPr {
                     .run()?;
                 continue;
             }
+            p.runcmd("git").args(["add", "."]).quiet(opts.quiet).run()?;
             p.runcmd("git")
-                .args(["commit", "-a", "-m"])
+                .args(["commit", "-m"])
                 .arg(&self.message)
                 .quiet(opts.quiet)
                 .run()?;

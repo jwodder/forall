@@ -159,7 +159,7 @@ impl Project {
 
     pub(crate) fn stash(&self) -> anyhow::Result<()> {
         if self.has_changes()? {
-            self.runcmd("git").arg("stash").run()?;
+            self.runcmd("git").args(["stash", "-u"]).run()?;
         }
         Ok(())
     }
