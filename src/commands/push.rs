@@ -10,6 +10,9 @@ impl Push {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
+            if !p.has_github() {
+                continue;
+            }
             // TODO: If this fails, emit "{BOLD:name}\n{ERROR:[1]}" and handle
             // with keep_going:
             let ahead = p.readcmd(

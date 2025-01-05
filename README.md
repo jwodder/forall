@@ -113,14 +113,15 @@ Any & all changes are then committed.
 
     forall [<global options>] pull
 
-Run `git pull` on each project
+Run `git pull` on each project that has a GitHub remote
 
 `forall push`
 -------------
 
     forall [<global options>] push
 
-Run `git push` on each project for which `HEAD` is ahead of `@{upstream}`
+Run `git push` on each project that has a GitHub remote and for which `HEAD` is
+ahead of `@{upstream}`
 
 `forall run`
 ------------

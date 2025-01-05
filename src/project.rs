@@ -66,6 +66,10 @@ impl Project {
         self.language
     }
 
+    pub(crate) fn has_github(&self) -> bool {
+        self.ghrepo.is_some()
+    }
+
     pub(crate) fn on_default_branch(&self) -> anyhow::Result<bool> {
         let current = self.readcmd("git", ["symbolic-ref", "--short", "-q", "HEAD"])?;
         Ok(current == "main" || current == "master")

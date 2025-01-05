@@ -10,6 +10,9 @@ impl Pull {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let mut failures = Vec::new();
         for p in projects {
+            if !p.has_github() {
+                continue;
+            }
             boldln!("{}", p.name());
             if !p
                 .runcmd("git")

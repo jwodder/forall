@@ -5,6 +5,7 @@ v0.2.0 (in development)
 - `--keep-going` and `--quiet` are now global options
 - Merge `script` into `run`
 - `list --json` now includes projects' GitHub repositories
+- `pull` and `push` now skip projects without GitHub remotes
 
 v0.1.0 (2024-12-12)
 -------------------
