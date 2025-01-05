@@ -32,17 +32,21 @@ subcommand.
 - `-D`, `--def-branch` — Only operate on projects currently on their default
   branch (`main` or `master`)
 
+- `--no-def-branch` — Only operate on projects currently not on their default
+  branch
+
 - `-f <shellcmd>`, `--filter <shellcmd>` — Run `$SHELL -c <shellcmd>` with the
   current working directory set to each project's directory and only operate on
   those projects for which the command succeeds
+
+- `--has-github` — Only operate on projects that have GitHub remotes
+
+- `--no-has-github` — Only operate on projects that do not have GitHub remotes
 
 - `-k`, `--keep-going` — By default, if a subcommand fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
   will instead continue with the remaining projects and will print a list of
   all failures on exit.
-
-- `--no-def-branch` — Only operate on projects currently not on their default
-  branch
 
 - `-q`, `--quiet` — Suppress successful command output
 
