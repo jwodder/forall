@@ -68,6 +68,8 @@ Print the name of each project in the directory tree in sorted order.
     - `name` — project name
     - `dirpath` — path to the directory in which the project is located
     - `language` — the project's language (`"Python"` or `"Rust"`)
+    - `ghrepo` — the project's remote GitHub repository in `{owner}/{name}`
+      format, or `null` if it does not have a GitHub remote
     - `on_default_branch` — `true` if the Git repository is currently on the
       default branch (`main` or `master`), `false` otherwise
     - `is_workspace` — `true` iff the project is a Rust workspace
