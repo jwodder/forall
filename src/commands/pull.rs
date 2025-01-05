@@ -3,6 +3,8 @@ use crate::util::Options;
 use clap::Args;
 
 /// Run `git pull` on each project
+///
+/// Only projects that have GitHub remotes are considered.
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Pull;
 

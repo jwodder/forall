@@ -9,18 +9,31 @@ use time::{format_description::FormatItem, macros::format_description, OffsetDat
 static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
     format_description!("forall-runpr-[year][month][day][hour][minute][second]");
 
+/// Run a command on each project and submit the changes as a GitHub pull
+/// request.
+///
+/// Only projects that have GitHub remotes are considered.
+///
+/// The command is run with the current working directory set to each
+/// respective project's directory.
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct RunPr {
-    #[arg(short, long)]
+    /// Name for the new pull request branch.
+    ///
+    /// Defaults to `forall-runpr-%Y%m%d%H%M%S`.
+    #[arg(short, long, value_name = "NAME")]
     branch: Option<String>,
 
-    #[arg(short, long, required = true)]
+    /// Commit message [required]
+    #[arg(short, long, required = true, value_name = "TEXT")]
     message: String,
 
-    #[arg(short = 'T', long)]
+    /// Title of the pull requests.  Defaults to the commit message.
+    #[arg(short = 'T', long, value_name = "TEXT")]
     pr_title: Option<String>,
 
-    #[arg(short = 'B', long)]
+    /// File containing the body of the pull requests
+    #[arg(short = 'B', long, value_name = "FILE")]
     pr_body_file: Option<PathBuf>,
 
     #[command(flatten)]
@@ -49,7 +62,6 @@ impl RunPr {
         let mut failures = Vec::new();
         for p in projects {
             let Some(ghrepo) = p.ghrepo() else {
-                // TODO: Log a message
                 continue;
             };
             boldln!("{}", p.name());

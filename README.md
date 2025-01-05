@@ -145,3 +145,51 @@ project's directory.
   shebang.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
+
+`forall run-pr`
+---------------
+
+    forall [<global options>] run-pr [<options>] <command> [<args> ...]
+
+Run the given command on each project and submit the changes as a GitHub pull
+request.
+
+Specifically, for each project that has a GitHub remote:
+
+- Any uncommitted changes are stashed.
+
+- A new branch is created (starting from the default branch) and checked out.
+
+- The command is run on the new branch, with the current working directory set
+  to the project's directory.
+    - The command should not perform any Git commits itself at this time.
+
+- `git add .` is run.  If there are no staged changes afterwards, then the
+  project's default branch is checked out, the PR branch is deleted, and no
+  further steps are taken.
+
+- `git commit` is run, and the branch is pushed to the `origin` remote.
+
+- A pull request is created in the corresponding GitHub repository, and the URL
+  of the PR is output.
+
+### Options
+
+- `-b <NAME>`, `--branch <NAME>` — Set the name for the new branch from which
+  the pull request is created.  Defaults to `forall-runpr-%Y%m%d%H%M%S`.
+
+- `-B <FILE>`, `--pr-body-file <FILE>` — Path to a file containing the body to
+  use for the pull requests.  If not specified, the PRs will have empty bodies.
+
+- `-m <TEXT>`, `--message <TEXT>` — The commit message to use.  This option is
+  required.
+
+- `--script` — Treat the command as a path to a script file.  The path is
+  canonicalized, and it is run via `perl` for its shebang handling; thus, the
+  script need not be executable, but it does need to have an appropriate
+  shebang.
+
+- `--shell` — Run the command with `$SHELL -c <command> <args>`
+
+- `-T <TEXT>`, `--pr-title <TEXT>` — The title to give the pull requests.
+  Defaults to the commit message with `[skip ci]` and similar strings removed.
