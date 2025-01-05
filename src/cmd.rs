@@ -103,6 +103,13 @@ impl CommandPlus {
         }
     }
 
+    pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
+        self.cmd.status().map_err(|source| CommandError::Startup {
+            cmdline: self.cmdline.clone(),
+            source,
+        })
+    }
+
     pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
         if !self.stderr_set {
             self.cmd.stderr(Stdio::inherit());

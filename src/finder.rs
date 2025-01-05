@@ -1,9 +1,10 @@
 use crate::project::Project;
+use crate::util::get_shell;
 use anyhow::Context;
 use clap::Args;
 use fs_err::PathExt;
 use std::collections::HashSet;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::path::PathBuf;
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -46,8 +47,7 @@ impl Finder {
             Some(p) => p.clone(),
             None => std::env::current_dir().context("failed to determine current directory")?,
         };
-        let shell = std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"));
-        let mut projects = self.find(root, &shell)?;
+        let mut projects = self.find(root, &get_shell())?;
         projects.sort_unstable_by(|p1, p2| p1.name().cmp(p2.name()));
         Ok(projects)
     }
