@@ -154,7 +154,7 @@ project's directory.
 Run the given command on each project and submit the changes as a GitHub pull
 request.
 
-Specifically, for each project that has a GitHub remote:
+Specifically, for each project that has a non-archived GitHub remote:
 
 - Any uncommitted changes are stashed.
 

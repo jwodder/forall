@@ -67,11 +67,9 @@ impl GitHub {
         }
     }
 
-    /*
-        fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
-            self.request::<(), T>("GET", path, None)
-        }
-    */
+    fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
+        self.request::<(), T>("GET", path, None)
+    }
 
     fn post<T: Serialize, U: DeserializeOwned>(&self, path: &str, body: T) -> anyhow::Result<U> {
         self.request::<T, U>("POST", path, Some(body))
@@ -82,6 +80,13 @@ impl GitHub {
             self.request::<T, U>("PUT", path, Some(body))
         }
     */
+
+    pub(crate) fn get_repository<R>(&self, repo: &R) -> anyhow::Result<Repository>
+    where
+        for<'a> R: RepositoryEndpoint<'a>,
+    {
+        self.get(&repo.api_url().to_string())
+    }
 
     pub(crate) fn create_pull_request<R>(
         &self,
@@ -106,6 +111,29 @@ pub(crate) trait RepositoryEndpoint<'a> {
     type Url: fmt::Display;
 
     fn api_url(&'a self) -> Self::Url;
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+pub(crate) struct Repository {
+    pub(crate) id: u64,
+    pub(crate) name: String,
+    pub(crate) full_name: String,
+    pub(crate) url: String,
+    pub(crate) private: bool,
+    pub(crate) archived: bool,
+    //pub(crate) html_url: String,
+    //pub(crate) description: String,
+    //pub(crate) ssh_url: String,
+    //pub(crate) topics: Vec<String>,
+    // owner?
+}
+
+impl<'a> RepositoryEndpoint<'a> for Repository {
+    type Url = &'a str;
+
+    fn api_url(&'a self) -> &'a str {
+        &self.url
+    }
 }
 
 impl<'a> RepositoryEndpoint<'a> for GHRepo {

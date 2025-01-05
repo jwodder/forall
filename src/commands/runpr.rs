@@ -12,7 +12,7 @@ static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
 /// Run a command on each project and submit the changes as a GitHub pull
 /// request.
 ///
-/// Only projects that have GitHub remotes are considered.
+/// Only projects that have non-archived GitHub remotes are considered.
 ///
 /// The command is run with the current working directory set to each
 /// respective project's directory.
@@ -64,6 +64,9 @@ impl RunPr {
             let Some(ghrepo) = p.ghrepo() else {
                 continue;
             };
+            if github.get_repository(ghrepo)?.archived {
+                continue;
+            }
             boldln!("{}", p.name());
             let defbranch = p.default_branch()?;
             p.stash()?;
