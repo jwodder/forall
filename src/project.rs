@@ -84,7 +84,7 @@ impl Project {
 
     pub(crate) fn default_branch(&self) -> anyhow::Result<&'static str> {
         let branches = self
-            .readcmd("branch", ["--format=%(refname:short)"])?
+            .readcmd("git", ["branch", "--format=%(refname:short)"])?
             .lines()
             .map(ToString::to_string)
             .collect::<HashSet<_>>();
@@ -150,13 +150,6 @@ impl Project {
         }
     }
 
-    pub(crate) fn has_changes(&self) -> anyhow::Result<bool> {
-        // TODO: Should --ignore-submodules be set to something?
-        Ok(!self
-            .readcmd("git", ["status", "--porcelain", "-uno"])?
-            .is_empty())
-    }
-
     pub(crate) fn has_staged_changes(&self) -> anyhow::Result<bool> {
         Ok(self
             .runcmd("git")
@@ -167,7 +160,11 @@ impl Project {
     }
 
     pub(crate) fn stash(&self) -> anyhow::Result<()> {
-        if self.has_changes()? {
+        // TODO: Should --ignore-submodules be set to something?
+        if !self
+            .readcmd("git", ["status", "--porcelain", "-unormal"])?
+            .is_empty()
+        {
             self.runcmd("git").args(["stash", "-u"]).run()?;
         }
         Ok(())
