@@ -66,9 +66,10 @@ impl RunPr {
                 failures.push(p);
                 continue;
             }
+            p.runcmd("git").args(["add", "."]).quiet(opts.quiet).run()?;
             // XXX: When adding support for commands that commit, also check
             //      whether $branch is ahead of $defbranch.
-            if !p.has_changes()? {
+            if !p.has_staged_changes()? {
                 println!("> No changes"); // TODO: Style output?
                 p.runcmd("git")
                     .arg("checkout")
@@ -82,7 +83,6 @@ impl RunPr {
                     .run()?;
                 continue;
             }
-            p.runcmd("git").args(["add", "."]).quiet(opts.quiet).run()?;
             p.runcmd("git")
                 .args(["commit", "-m"])
                 .arg(&self.message)

@@ -157,6 +157,15 @@ impl Project {
             .is_empty())
     }
 
+    pub(crate) fn has_staged_changes(&self) -> anyhow::Result<bool> {
+        Ok(self
+            .runcmd("git")
+            .args(["diff", "--cached", "--quiet"])
+            .status()?
+            .code()
+            == Some(1))
+    }
+
     pub(crate) fn stash(&self) -> anyhow::Result<()> {
         if self.has_changes()? {
             self.runcmd("git").args(["stash", "-u"]).run()?;
