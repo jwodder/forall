@@ -10,6 +10,7 @@ pub(crate) struct CommandPlus {
     cmd: Command,
     quiet: bool,
     keep_going: bool,
+    stderr_set: bool,
 }
 
 impl CommandPlus {
@@ -20,6 +21,7 @@ impl CommandPlus {
             cmd: Command::new(arg0),
             quiet: false,
             keep_going: false,
+            stderr_set: false,
         }
     }
 
@@ -57,6 +59,7 @@ impl CommandPlus {
 
     pub(crate) fn stderr<T: Into<Stdio>>(&mut self, cfg: T) -> &mut Self {
         self.cmd.stderr(cfg);
+        self.stderr_set = true;
         self
     }
 
@@ -101,7 +104,10 @@ impl CommandPlus {
     }
 
     pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
-        match self.cmd.stderr(Stdio::inherit()).output() {
+        if !self.stderr_set {
+            self.cmd.stderr(Stdio::inherit());
+        }
+        match self.cmd.output() {
             Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
                 Ok(s) => Ok(s),
                 Err(e) => Err(CommandOutputError::Decode {

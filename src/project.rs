@@ -1,7 +1,9 @@
 use crate::cmd::{CommandError, CommandPlus};
+use crate::util::get_ghrepo;
 use anyhow::Context;
 use cargo_metadata::{MetadataCommand, TargetKind};
 use fs_err::PathExt;
+use ghrepo::GHRepo;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
@@ -15,10 +17,12 @@ pub(crate) struct Project {
     language: Language,
     is_workspace: bool,
     is_virtual_workspace: bool,
+    ghrepo: Option<GHRepo>,
 }
 
 impl Project {
     pub(crate) fn try_for_dirpath(p: PathBuf) -> anyhow::Result<Option<Project>> {
+        let ghrepo = get_ghrepo(&p)?;
         let pyproject = p.join("pyproject.toml");
         let cargo = p.join("Cargo.toml");
         if pyproject.fs_err_try_exists()? {
@@ -31,6 +35,7 @@ impl Project {
                 language: Language::Python,
                 is_workspace: false,
                 is_virtual_workspace: false,
+                ghrepo,
             }))
         } else if cargo.fs_err_try_exists()? {
             let src = fs_err::read_to_string(&cargo)?;
@@ -42,6 +47,7 @@ impl Project {
                 language: Language::Rust,
                 is_workspace: data.is_workspace(),
                 is_virtual_workspace: data.is_virtual_workspace(),
+                ghrepo,
             }))
         } else {
             Ok(None)
@@ -70,6 +76,7 @@ impl Project {
             name: self.name.clone(),
             dirpath: self.dirpath.clone(),
             on_default_branch: self.on_default_branch()?,
+            ghrepo: self.ghrepo.clone(),
             language: self.language,
             is_workspace: self.is_workspace,
             is_virtual_workspace: self.is_virtual_workspace,
@@ -186,6 +193,7 @@ pub(crate) struct ProjectDetails {
     pub(crate) name: String,
     pub(crate) dirpath: PathBuf,
     pub(crate) language: Language,
+    pub(crate) ghrepo: Option<GHRepo>,
     pub(crate) on_default_branch: bool,
     pub(crate) is_workspace: bool,
     pub(crate) is_virtual_workspace: bool,
@@ -276,5 +284,5 @@ struct Workspace {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 struct WorkspacePackage {
-    repository: ghrepo::GHRepo,
+    repository: GHRepo,
 }
