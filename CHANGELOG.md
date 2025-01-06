@@ -1,5 +1,5 @@
-v0.2.0 (in development)
------------------------
+v0.2.0 (2025-01-06)
+-------------------
 - Eliminate `--show-failures` in favor of having `--keep-going` include its
   behavior
 - `--keep-going` and `--quiet` are now global options

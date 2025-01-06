@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "forall"
-version = "0.2.0-dev"
+version = "0.2.0"
 dependencies = [
  "anstream",
  "anstyle",
