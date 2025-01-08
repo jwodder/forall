@@ -1,3 +1,7 @@
+v0.3.0 (in development)
+-----------------------
+- Renamed `--no-has-github` to `--no-github`
+
 v0.2.0 (2025-01-06)
 -------------------
 - Eliminate `--show-failures` in favor of having `--keep-going` include its

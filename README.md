@@ -41,7 +41,7 @@ subcommand.
 
 - `--has-github` — Only operate on projects that have GitHub remotes
 
-- `--no-has-github` — Only operate on projects that do not have GitHub remotes
+- `--no-github` — Only operate on projects that do not have GitHub remotes
 
 - `-k`, `--keep-going` — By default, if a subcommand fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
