@@ -25,12 +25,12 @@ pub(crate) struct Finder {
     no_def_branch: bool,
 
     /// Only operate on projects that have GitHub remotes
-    #[arg(long, overrides_with = "no_has_github", global = true)]
+    #[arg(long, overrides_with = "no_github", global = true)]
     has_github: bool,
 
     /// Only operate on projects that do not have GitHub remotes
     #[arg(long, global = true)]
-    no_has_github: bool,
+    no_github: bool,
 
     /// Directory to traverse for projects [default: current directory]
     #[arg(long, global = true, value_name = "DIRPATH")]
@@ -118,7 +118,7 @@ impl Finder {
     }
 
     fn has_github(&self) -> Option<bool> {
-        match (self.has_github, self.no_has_github) {
+        match (self.has_github, self.no_github) {
             (false, false) => None,
             (true, false) => Some(true),
             (false, true) => Some(false),
