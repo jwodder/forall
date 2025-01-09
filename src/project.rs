@@ -1,4 +1,4 @@
-use crate::cmd::{CommandError, CommandPlus};
+use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
 use crate::util::get_ghrepo;
 use anyhow::Context;
 use cargo_metadata::{MetadataCommand, TargetKind};
@@ -170,6 +170,15 @@ impl Project {
         Ok(())
     }
 
+    pub(crate) fn has_stash(&self) -> anyhow::Result<bool> {
+        let r = self.readcmd("git", ["rev-parse", "--verify", "--quiet", "refs/stash"]);
+        match r {
+            Ok(stdout) => Ok(!stdout.is_empty()),
+            Err(CommandOutputError::Exit { rc, .. }) if rc.code() == Some(1) => Ok(false),
+            Err(e) => Err(e.into()),
+        }
+    }
+
     pub(crate) fn check<S, I>(&self, cmd: S, args: I) -> anyhow::Result<bool>
     where
         S: AsRef<OsStr>,
@@ -194,7 +203,7 @@ impl Project {
         cmd
     }
 
-    pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> anyhow::Result<String>
+    pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> Result<String, CommandOutputError>
     where
         S: AsRef<OsStr>,
         I: IntoIterator<Item: AsRef<OsStr>>,
@@ -204,7 +213,6 @@ impl Project {
             .current_dir(&self.dirpath)
             .check_output()
             .map(|s| s.trim().to_owned())
-            .map_err(Into::into)
     }
 }
 

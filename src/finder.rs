@@ -32,6 +32,14 @@ pub(crate) struct Finder {
     #[arg(long, global = true)]
     no_github: bool,
 
+    /// Only operate on projects that have stashed changes
+    #[arg(long, overrides_with = "no_stash", global = true)]
+    has_stash: bool,
+
+    /// Only operate on projects that do not have stashed changes
+    #[arg(long, global = true)]
+    no_stash: bool,
+
     /// Directory to traverse for projects [default: current directory]
     #[arg(long, global = true, value_name = "DIRPATH")]
     root: Option<PathBuf>,
@@ -100,6 +108,11 @@ impl Finder {
                 return Ok(false);
             }
         }
+        if let Some(flag) = self.has_stash() {
+            if p.has_stash()? != flag {
+                return Ok(false);
+            }
+        }
         if let Some(ref cmd) = self.filter {
             if !p.check(shell, ["-c", cmd])? {
                 return Ok(false);
@@ -119,6 +132,15 @@ impl Finder {
 
     fn has_github(&self) -> Option<bool> {
         match (self.has_github, self.no_github) {
+            (false, false) => None,
+            (true, false) => Some(true),
+            (false, true) => Some(false),
+            (true, true) => unreachable!(),
+        }
+    }
+
+    fn has_stash(&self) -> Option<bool> {
+        match (self.has_stash, self.no_stash) {
             (false, false) => None,
             (true, false) => Some(true),
             (false, true) => Some(false),
