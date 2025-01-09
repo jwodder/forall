@@ -43,6 +43,10 @@ subcommand.
 
 - `--no-github` — Only operate on projects that do not have GitHub remotes
 
+- `--has-stash` — Only operate on projects that have stashed changes
+
+- `--no-stash` — Only operate on projects that do not have stashed changes
+
 - `-k`, `--keep-going` — By default, if a subcommand fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
   will instead continue with the remaining projects and will print a list of
