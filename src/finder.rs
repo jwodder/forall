@@ -1,4 +1,4 @@
-use crate::project::Project;
+use crate::project::{Language, Project};
 use crate::util::get_shell;
 use anyhow::Context;
 use clap::Args;
@@ -39,6 +39,13 @@ pub(crate) struct Finder {
     /// Only operate on projects that do not have stashed changes
     #[arg(long, global = true)]
     no_stash: bool,
+
+    /// Only operate on projects written in the given language
+    ///
+    /// Possible options are "Python"/"py" and "Rust"/"rs" (all
+    /// case-insensitive).
+    #[arg(short = 'L', long, global = true)]
+    language: Option<Language>,
 
     /// Directory to traverse for projects [default: current directory]
     #[arg(long, global = true, value_name = "DIRPATH")]
@@ -110,6 +117,11 @@ impl Finder {
         }
         if let Some(flag) = self.has_stash() {
             if p.has_stash()? != flag {
+                return Ok(false);
+            }
+        }
+        if let Some(lang) = self.language {
+            if p.language() != lang {
                 return Ok(false);
             }
         }
