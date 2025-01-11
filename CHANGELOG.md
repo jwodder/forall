@@ -4,6 +4,8 @@ v0.3.0 (in development)
 - Added `--has-stash` and `--no-stash` filter options
 - Added `--language` filter option
 - Added `rsclean` command
+- `--root` can now be specified multiple times
+- Added a short `-R` form for `--root`
 
 v0.2.0 (2025-01-06)
 -------------------
