@@ -18,7 +18,7 @@ impl PreUpdate {
                 continue;
             }
             boldln!("{}", p.name());
-            p.stash()?;
+            p.stash(opts.quiet)?;
             if !p
                 .runcmd("pre-commit")
                 .arg("autoupdate")
