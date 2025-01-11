@@ -69,7 +69,7 @@ impl RunPr {
             }
             boldln!("{}", p.name());
             let defbranch = p.default_branch()?;
-            p.stash()?;
+            p.stash(opts.quiet)?;
             p.runcmd("git")
                 .arg("checkout")
                 .arg("-b")

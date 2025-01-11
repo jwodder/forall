@@ -161,13 +161,16 @@ impl Project {
             == Some(1))
     }
 
-    pub(crate) fn stash(&self) -> anyhow::Result<()> {
+    pub(crate) fn stash(&self, quiet: bool) -> anyhow::Result<()> {
         // TODO: Should --ignore-submodules be set to something?
         if !self
             .readcmd("git", ["status", "--porcelain", "-unormal"])?
             .is_empty()
         {
-            self.runcmd("git").args(["stash", "-u"]).run()?;
+            self.runcmd("git")
+                .args(["stash", "-u"])
+                .quiet(quiet)
+                .run()?;
         }
         Ok(())
     }
