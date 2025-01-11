@@ -5,6 +5,7 @@ mod list;
 mod preupdate;
 mod pull;
 mod push;
+mod rsclean;
 mod run;
 mod runpr;
 use self::clean::Clean;
@@ -14,6 +15,7 @@ use self::list::List;
 use self::preupdate::PreUpdate;
 use self::pull::Pull;
 use self::push::Push;
+use self::rsclean::Rsclean;
 pub(crate) use self::run::Run;
 use self::runpr::RunPr;
 use crate::project::Project;
@@ -29,6 +31,7 @@ pub(crate) enum Command {
     PreUpdate(PreUpdate),
     Pull(Pull),
     Push(Push),
+    Rsclean(Rsclean),
     Run(Run),
     RunPr(RunPr),
 }
@@ -43,6 +46,7 @@ impl Command {
             Command::PreUpdate(c) => c.run(opts, projects),
             Command::Pull(c) => c.run(opts, projects),
             Command::Push(c) => c.run(opts, projects),
+            Command::Rsclean(c) => c.run(opts, projects),
             Command::Run(c) => c.run(opts, projects),
             Command::RunPr(c) => c.run(opts, projects),
         }

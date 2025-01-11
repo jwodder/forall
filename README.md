@@ -135,6 +135,13 @@ Run `git pull` on each project that has a GitHub remote
 Run `git push` on each project that has a GitHub remote and for which `HEAD` is
 ahead of `@{upstream}`
 
+`forall rsclean`
+----------------
+
+    forall [<global options>] rsclean
+
+Run `cargo clean` on each Rust project that contains a `target/` directory
+
 `forall run`
 ------------
 
