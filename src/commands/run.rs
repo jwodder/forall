@@ -10,6 +10,10 @@ use clap::Args;
 pub(crate) struct Run {
     #[command(flatten)]
     pub(crate) run_opts: RunOpts,
+
+    /// Stash any uncommitted changes before running the command
+    #[arg(short, long)]
+    pub(crate) stash: bool,
 }
 
 impl Run {
@@ -18,6 +22,9 @@ impl Run {
         let mut failures = Vec::new();
         for p in projects {
             boldln!("{}", p.name());
+            if self.stash {
+                p.stash(opts.quiet)?;
+            }
             if !runner.run(&p, opts)? {
                 failures.push(p);
             }
