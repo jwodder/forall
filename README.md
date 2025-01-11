@@ -162,6 +162,8 @@ project's directory.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
 
+- `-s`, `--stash` — Stash any uncommitted changes before running the command
+
 `forall run-pr`
 ---------------
 

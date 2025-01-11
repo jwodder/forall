@@ -53,7 +53,8 @@ mod tests {
                     script: false,
                     shell: false,
                     command: vec![OsString::from("cmd"), OsString::from("--shell")],
-                }
+                },
+                stash: false
             })
         );
     }
@@ -68,7 +69,8 @@ mod tests {
                     script: false,
                     shell: false,
                     command: vec![OsString::from("cmd"), OsString::from("-x")],
-                }
+                },
+                stash: false
             })
         );
     }
