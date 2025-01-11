@@ -5,7 +5,7 @@ use clap::Args;
 use fs_err::PathExt;
 use std::collections::HashSet;
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Finder {
@@ -47,9 +47,10 @@ pub(crate) struct Finder {
     #[arg(short = 'L', long, global = true)]
     language: Option<Language>,
 
-    /// Directory to traverse for projects [default: current directory]
-    #[arg(long, global = true, value_name = "DIRPATH")]
-    root: Option<PathBuf>,
+    /// Directory to traverse for projects.  Can be specified multiple times to
+    /// traverse multiple directories.  [default: current directory]
+    #[arg(short = 'R', long, global = true, value_name = "DIRPATH")]
+    root: Vec<PathBuf>,
 
     /// Skip the given project.  Can be specified multiple times.
     #[arg(long, global = true, value_name = "NAME")]
@@ -58,16 +59,20 @@ pub(crate) struct Finder {
 
 impl Finder {
     pub(crate) fn findall(&self) -> anyhow::Result<Vec<Project>> {
-        let root = match &self.root {
-            Some(p) => p.clone(),
-            None => std::env::current_dir().context("failed to determine current directory")?,
+        let roots = if self.root.is_empty() {
+            &vec![std::env::current_dir().context("failed to determine current directory")?]
+        } else {
+            &self.root
         };
-        let mut projects = self.find(root, &get_shell())?;
+        let mut projects = Vec::new();
+        for dirpath in roots {
+            projects.extend(self.find(dirpath, &get_shell())?);
+        }
         projects.sort_unstable_by(|p1, p2| p1.name().cmp(p2.name()));
         Ok(projects)
     }
 
-    fn find(&self, dirpath: PathBuf, shell: &OsStr) -> anyhow::Result<Vec<Project>> {
+    fn find(&self, dirpath: &Path, shell: &OsStr) -> anyhow::Result<Vec<Project>> {
         let mut projects = Vec::new();
         let ignorefile = dirpath.join(".forall-ignore");
         let exclude = match fs_err::read_to_string(ignorefile) {
@@ -95,7 +100,7 @@ impl Finder {
                     }
                 }
             } else {
-                projects.extend(self.find(subpath, shell)?);
+                projects.extend(self.find(&subpath, shell)?);
             }
         }
         Ok(projects)

@@ -8,8 +8,8 @@
 
 `forall` is my personal [Rust](https://www.rust-lang.org) program for
 performing various operations on multiple local Git repositories at once.  It
-traverses a directory tree looking for projects and runs a specified command on
-each of them, possibly after excluding certain projects.
+traverses one or more directory trees looking for projects and runs a specified
+command on each of them, possibly after excluding certain projects.
 
 Currently, only Git repositories containing Rust projects or
 `pyproject.toml`-based Python projects are supported.
@@ -58,8 +58,9 @@ subcommand.
 
 - `-q`, `--quiet` — Suppress successful command output
 
-- `--root <dirpath>` — Start traversing from `<dirpath>` [default: the current
-  working directory
+- `-R <dirpath>`, `--root <dirpath>` — Start traversing from `<dirpath>`.  Can
+  be specified multiple times to traverse multiple directories.  [default: the
+  current working directory]
 
 - `--skip <name>` — Do not operate on the given project.  This option can be
   specified multiple times.
