@@ -47,6 +47,10 @@ subcommand.
 
 - `--no-stash` — Only operate on projects that do not have stashed changes
 
+- `-L <language>`, `--language <language>` — Only operate on projects written
+  in the given language.  Possible options are "Python"/"py" and "Rust"/"rs"
+  (all case-insensitive).
+
 - `-k`, `--keep-going` — By default, if a subcommand fails for a project,
   `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
   will instead continue with the remaining projects and will print a list of

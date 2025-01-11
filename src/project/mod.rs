@@ -1,3 +1,5 @@
+mod lang;
+pub(crate) use self::lang::*;
 use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
 use crate::util::get_ghrepo;
 use anyhow::Context;
@@ -213,21 +215,6 @@ impl Project {
             .current_dir(&self.dirpath)
             .check_output()
             .map(|s| s.trim().to_owned())
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-pub(crate) enum Language {
-    Python,
-    Rust,
-}
-
-impl Language {
-    pub(crate) fn ext(&self) -> &'static str {
-        match self {
-            Language::Python => "py",
-            Language::Rust => "rs",
-        }
     }
 }
 
