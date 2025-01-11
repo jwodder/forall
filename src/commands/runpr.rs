@@ -1,13 +1,22 @@
-use crate::github::{CreatePullRequest, GitHub};
+use crate::github::{CreateLabel, CreatePullRequest, GitHub};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
 
 static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
     format_description!("forall-runpr-[year][month][day][hour][minute][second]");
+
+// These are the "default colors" listed when creating a label via GitHub's web
+// UI as of 2023-09-24:
+static NEW_LABEL_COLORS: &[&str] = &[
+    "0052cc", "006b75", "0e8a16", "1d76db", "5319e7", "b60205", "bfd4f2", "bfdadc", "c2e0c6",
+    "c5def5", "d4c5f9", "d93f0b", "e99695", "f9d0c4", "fbca04", "fef2c0",
+];
 
 /// Run a command on each project and submit the changes as a GitHub pull
 /// request.
@@ -24,6 +33,12 @@ pub(crate) struct RunPr {
     #[arg(short, long, value_name = "NAME")]
     branch: Option<String>,
 
+    /// Apply the given label to the new pull requests.  If the label does not
+    /// already exist in a repository, it is created.  This option can be
+    /// specified multiple times.
+    #[arg(short, long, value_name = "NAME")]
+    label: Vec<String>,
+
     /// Commit message [required]
     #[arg(short, long, required = true, value_name = "TEXT")]
     message: String,
@@ -36,6 +51,12 @@ pub(crate) struct RunPr {
     #[arg(short = 'B', long, value_name = "FILE")]
     pr_body_file: Option<PathBuf>,
 
+    /// Apply the given label to the new pull requests.  If the label does not
+    /// already exist in a repository, the label is not applied.  This option
+    /// can be specified multiple times.
+    #[arg(long, value_name = "NAME")]
+    soft_label: Vec<String>,
+
     #[command(flatten)]
     pub(crate) run_opts: RunOpts,
 }
@@ -43,6 +64,7 @@ pub(crate) struct RunPr {
 impl RunPr {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let github = GitHub::authed()?;
+        let mut colorgen = RandomColor::new(thread_rng());
         let branch = match self.branch {
             Some(b) => b,
             None => OffsetDateTime::now_local()
@@ -119,6 +141,35 @@ impl RunPr {
                 },
             )?;
             println!("{}", pr.html_url); // TODO: Improve?
+            if !self.label.is_empty() || !self.soft_label.is_empty() {
+                let label_names = github
+                    .get_label_names(ghrepo)?
+                    .into_iter()
+                    .map(|s| s.to_ascii_lowercase())
+                    .collect::<HashSet<_>>();
+                let mut labels = Vec::new();
+                for lbl in &self.label {
+                    if !label_names.contains(&lbl.to_ascii_lowercase()) {
+                        github.create_label(
+                            ghrepo,
+                            CreateLabel {
+                                name: Cow::from(lbl),
+                                color: Cow::from(colorgen.generate()),
+                                description: None,
+                            },
+                        )?;
+                    }
+                    labels.push(lbl.as_str());
+                }
+                for lbl in &self.soft_label {
+                    if label_names.contains(&lbl.to_ascii_lowercase()) {
+                        labels.push(lbl.as_str());
+                    }
+                }
+                if !labels.is_empty() {
+                    github.add_labels_to_pr(ghrepo, pr.number, &labels)?;
+                }
+            }
         }
         if !failures.is_empty() {
             boldln!("\nFailures:");
@@ -127,6 +178,22 @@ impl RunPr {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct RandomColor<R>(R);
+
+impl<R: Rng> RandomColor<R> {
+    fn new(rng: R) -> RandomColor<R> {
+        RandomColor(rng)
+    }
+
+    fn generate(&mut self) -> &'static str {
+        NEW_LABEL_COLORS
+            .choose(&mut self.0)
+            .expect("NEW_LABEL_COLORS should be nonempty")
+            .to_owned()
     }
 }
 

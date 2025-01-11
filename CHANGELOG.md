@@ -7,6 +7,7 @@ v0.3.0 (in development)
 - `--root` can now be specified multiple times
 - Added a short `-R` form for `--root`
 - Added `--stash` option to `run` command
+- Added `--label` and `--soft-label` options to the `run-pr` command
 
 v0.2.0 (2025-01-06)
 -------------------
