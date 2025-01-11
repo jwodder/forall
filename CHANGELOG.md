@@ -3,6 +3,7 @@ v0.3.0 (in development)
 - Renamed `--no-has-github` to `--no-github`
 - Added `--has-stash` and `--no-stash` filter options
 - Added `--language` filter option
+- Added `rsclean` command
 
 v0.2.0 (2025-01-06)
 -------------------
