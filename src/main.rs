@@ -1,14 +1,14 @@
-#[macro_use]
-mod util;
-
 mod cmd;
 mod commands;
 mod finder;
 mod github;
 mod http_util;
+mod logging;
 mod project;
+mod util;
 use crate::commands::Command;
 use crate::finder::Finder;
+use crate::logging::init_logging;
 use crate::util::Options;
 use clap::Parser;
 
@@ -32,6 +32,7 @@ fn main() -> anyhow::Result<()> {
         finder,
         command,
     } = Arguments::parse();
+    init_logging(opts.verbosity());
     let projects = finder.findall()?;
     command.run(opts, projects)
 }

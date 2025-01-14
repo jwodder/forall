@@ -1,6 +1,6 @@
 use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
+use crate::logging::Verbosity;
 use crate::project::Project;
-use anstyle::Style;
 use clap::Args;
 use ghrepo::GHRepo;
 use std::ffi::OsString;
@@ -16,6 +16,20 @@ pub(crate) struct Options {
     /// Suppress successful command output
     #[arg(short, long, global = true)]
     pub(crate) quiet: bool,
+
+    #[arg(short, long, global = true, conflicts_with = "quiet")]
+    pub(crate) verbose: bool,
+}
+
+impl Options {
+    pub(crate) fn verbosity(&self) -> Verbosity {
+        match (self.quiet, self.verbose) {
+            (false, false) => Verbosity::Normal,
+            (true, false) => Verbosity::Quiet,
+            (false, true) => Verbosity::Verbose,
+            (true, true) => unreachable!(),
+        }
+    }
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -89,25 +103,6 @@ impl TryFrom<RunOpts> for Runner {
 pub(crate) enum RunOptsError {
     #[error("failed to canonicalize script path")]
     Canonicalize(#[from] std::io::Error),
-}
-
-macro_rules! boldln {
-    ($($arg:tt)*) => {{
-        $crate::util::styleln(anstyle::Style::new().bold(), format_args!($($arg)*));
-    }};
-}
-
-macro_rules! errorln {
-    ($($arg:tt)*) => {{
-        $crate::util::styleln(
-            anstyle::Style::new().bold().fg_color(Some(anstyle::AnsiColor::Red.into())),
-            format_args!($($arg)*)
-        );
-    }};
-}
-
-pub(crate) fn styleln(style: Style, fmtargs: std::fmt::Arguments<'_>) {
-    anstream::println!("{style}{fmtargs}{style:#}");
 }
 
 pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {

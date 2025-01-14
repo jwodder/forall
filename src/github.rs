@@ -1,4 +1,5 @@
 use crate::http_util::{get_next_link, StatusError};
+use crate::logging::logrequest;
 use anyhow::Context;
 use ghrepo::GHRepo;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -50,7 +51,7 @@ impl GitHub {
         url: Url,
         payload: Option<T>,
     ) -> anyhow::Result<Response> {
-        //log::debug!("{} {}", method, url);
+        logrequest(method, &url);
         let req = self.client.request_url(method, &url);
         let r = if let Some(p) = payload {
             req.send_json(p)

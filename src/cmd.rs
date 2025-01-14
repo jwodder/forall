@@ -1,3 +1,4 @@
+use crate::logging::logcmd;
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -73,7 +74,12 @@ impl CommandPlus {
         self
     }
 
+    pub(crate) fn cmdline(&self) -> &str {
+        &self.cmdline
+    }
+
     pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
+        logcmd(self);
         let rc = if self.quiet {
             let (output, rc) = self.combine_stdout_stderr()?;
             if !rc.success() {
@@ -90,9 +96,10 @@ impl CommandPlus {
         if rc.success() {
             Ok(true)
         } else if self.keep_going {
-            match rc.code() {
-                Some(code) => errorln!("[{code}]"),
-                None => errorln!("[{rc}]"),
+            if let Some(code) = rc.code() {
+                log::error!("[{code}]");
+            } else {
+                log::error!("[{rc}]");
             }
             Ok(false)
         } else {
@@ -104,6 +111,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
+        logcmd(self);
         self.cmd.status().map_err(|source| CommandError::Startup {
             cmdline: self.cmdline.clone(),
             source,
@@ -111,6 +119,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
+        logcmd(self);
         if !self.stderr_set {
             self.cmd.stderr(Stdio::inherit());
         }
@@ -136,6 +145,7 @@ impl CommandPlus {
     pub(crate) fn combine_stdout_stderr(
         &mut self,
     ) -> Result<(String, ExitStatus), CombinedCommandError> {
+        logcmd(self);
         // <https://stackoverflow.com/a/72831067/744178>
         let mut child = self
             .cmd

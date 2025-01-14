@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -23,7 +24,7 @@ impl Push {
                 ["rev-list", "--count", "--right-only", "@{upstream}...HEAD"],
             )?;
             if ahead.parse::<usize>().unwrap_or_default() > 0 {
-                boldln!("{}", p.name());
+                logproject(&p);
                 if !p
                     .runcmd("git")
                     .arg("push")
@@ -35,12 +36,7 @@ impl Push {
                 }
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }
