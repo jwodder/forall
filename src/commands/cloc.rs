@@ -1,4 +1,5 @@
 use crate::cmd::CommandOutputError;
+use crate::logging::logfailures;
 use crate::project::{Language, Project};
 use crate::util::Options;
 use anyhow::Context;
@@ -16,7 +17,7 @@ impl Cloc {
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
                 if opts.keep_going {
-                    errorln!("{}: Could not identify source files", p.name());
+                    log::error!("{}: Could not identify source files", p.name());
                     failures.push(p);
                     continue;
                 } else {
@@ -42,12 +43,7 @@ impl Cloc {
             let lines = data.for_language(p.language()).unwrap_or_default().code;
             println!("{lines:6} {}", p.name());
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use crate::logging::logproject;
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -10,7 +11,7 @@ impl Clean {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
             if !p.readcmd("git", ["clean", "-dXn"])?.is_empty() {
-                boldln!("{}", p.name());
+                logproject(&p);
                 p.runcmd("git")
                     .args(["clean", "-dXf"])
                     .quiet(opts.quiet)

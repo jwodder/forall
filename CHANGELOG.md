@@ -7,6 +7,7 @@ v0.3.0 (in development)
 - `--root` can now be specified multiple times
 - Added a short `-R` form for `--root`
 - Added `--stash` option to `run` command
+- Added `--verbose` option
 
 v0.2.0 (2025-01-06)
 -------------------

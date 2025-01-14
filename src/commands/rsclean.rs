@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::{Language, Project};
 use crate::util::Options;
 use clap::Args;
@@ -14,7 +15,7 @@ impl Rsclean {
             if p.language() != Language::Rust || !p.dirpath().join("target").fs_err_try_exists()? {
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             if !p
                 .runcmd("cargo")
                 .arg("clean")
@@ -25,12 +26,7 @@ impl Rsclean {
                 failures.push(p);
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }
