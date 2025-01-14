@@ -152,7 +152,7 @@ impl GitHub {
         for<'a> R: RepositoryEndpoint<'a>,
     {
         self.post::<_, serde::de::IgnoredAny>(
-            &format!("{}/issues/{prnum}/labels/", repo.api_url()),
+            &format!("{}/issues/{prnum}/labels", repo.api_url()),
             labels,
         )
         .map(|_| ())
