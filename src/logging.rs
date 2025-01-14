@@ -48,15 +48,15 @@ pub(crate) fn init_logging(verbosity: Verbosity) {
     fern::Dispatch::new()
         .format(|out, message, record| {
             use AnsiColor::*;
-            let (style, prefix) = match (record.level(), record.target()) {
-                (Level::Error, _) => (Style::new().fg_color(Some(Red.into())), ""),
-                (Level::Warn, _) => (Style::new().fg_color(Some(Yellow.into())), ""),
-                (Level::Info, t) if t == PROJECT_TARGET => (Style::new().bold(), ""),
-                (Level::Info, _) => (Style::new().fg_color(Some(Blue.into())), "> "),
-                (Level::Debug, _) => (Style::new().fg_color(Some(Cyan.into())), ""),
-                (Level::Trace, _) => (Style::new().fg_color(Some(Green.into())), ""),
+            let style = match (record.level(), record.target()) {
+                (Level::Error, _) => Style::new().fg_color(Some(Red.into())),
+                (Level::Warn, _) => Style::new().fg_color(Some(Yellow.into())),
+                (Level::Info, t) if t == PROJECT_TARGET => Style::new().bold(),
+                (Level::Info, _) => Style::new().fg_color(Some(Blue.into())),
+                (Level::Debug, _) => Style::new().fg_color(Some(Cyan.into())),
+                (Level::Trace, _) => Style::new().fg_color(Some(Green.into())),
             };
-            out.finish(format_args!("{style}{prefix}{message}{style:#}"));
+            out.finish(format_args!("{style}{message}{style:#}"));
         })
         .level(LevelFilter::Info)
         .level_for("forall", verbosity.level_filter())
