@@ -199,6 +199,10 @@ Specifically, for each project that has a non-archived GitHub remote:
 - `-B <FILE>`, `--pr-body-file <FILE>` — Path to a file containing the body to
   use for the pull requests.  If not specified, the PRs will have empty bodies.
 
+- `-l <NAME>`, `--label <NAME>` — Apply the given label to the new pull
+  requests.  If the label does not already exist in a repository, it is
+  created.  This option can be specified multiple times.
+
 - `-m <TEXT>`, `--message <TEXT>` — The commit message to use.  This option is
   required.
 
@@ -208,6 +212,10 @@ Specifically, for each project that has a non-archived GitHub remote:
   shebang.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
+
+- `--soft-label <NAME>` — Apply the given label to the new pull requests.  If
+  the label does not already exist in a repository, the label is not applied.
+  This option can be specified multiple times.
 
 - `-T <TEXT>`, `--pr-title <TEXT>` — The title to give the pull requests.
   Defaults to the commit message with `[skip ci]` and similar strings removed.

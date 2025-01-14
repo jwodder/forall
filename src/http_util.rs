@@ -3,6 +3,7 @@ use mime::{Mime, JSON};
 use serde_json::{to_string_pretty, value::Value};
 use std::fmt::{self, Write};
 use ureq::Response;
+use url::Url;
 
 /// Error raised for a 4xx or 5xx HTTP response that includes the response body
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,4 +59,13 @@ pub(crate) fn is_json_response(r: &Response) -> bool {
         .is_some_and(|ct| {
             ct.type_() == "application" && (ct.subtype() == "json" || ct.suffix() == Some(JSON))
         })
+}
+
+/// Return the `rel="next"` URL, if any, from the response's "Link" header
+pub(crate) fn get_next_link(r: &Response) -> Option<Url> {
+    let header_value = r.header("Link")?;
+    parse_link_header::parse_with_rel(header_value)
+        .ok()?
+        .get("next")
+        .map(|link| link.uri.clone())
 }

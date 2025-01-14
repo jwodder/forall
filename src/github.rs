@@ -1,10 +1,10 @@
-use crate::http_util::StatusError;
+use crate::http_util::{get_next_link, StatusError};
 use anyhow::Context;
 use ghrepo::GHRepo;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
-use ureq::{Agent, AgentBuilder};
+use ureq::{Agent, AgentBuilder, Response};
 use url::Url;
 
 static USER_AGENT: &str = concat!(
@@ -44,13 +44,12 @@ impl GitHub {
         Ok(GitHub::new(&token))
     }
 
-    fn request<T: Serialize, U: DeserializeOwned>(
+    fn raw_request<T: Serialize>(
         &self,
         method: &str,
-        path: &str,
+        url: Url,
         payload: Option<T>,
-    ) -> anyhow::Result<U> {
-        let url = mkurl(path)?;
+    ) -> anyhow::Result<Response> {
         //log::debug!("{} {}", method, url);
         let req = self.client.request_url(method, &url);
         let r = if let Some(p) = payload {
@@ -59,12 +58,23 @@ impl GitHub {
             req.call()
         };
         match r {
-            Ok(r) => r
-                .into_json::<U>()
-                .with_context(|| format!("Failed to deserialize response from {path}")),
+            Ok(r) => Ok(r),
             Err(ureq::Error::Status(_, r)) => Err(StatusError::for_response(method, r).into()),
-            Err(e) => Err(e).with_context(|| format!("Failed to make {method} request to {path}")),
+            Err(e) => Err(e).with_context(|| format!("Failed to make {method} request to {url}")),
         }
+    }
+
+    fn request<T: Serialize, U: DeserializeOwned>(
+        &self,
+        method: &str,
+        path: &str,
+        payload: Option<T>,
+    ) -> anyhow::Result<U> {
+        self.raw_request(method, mkurl(path)?, payload)
+            .and_then(|r| {
+                r.into_json::<U>()
+                    .with_context(|| format!("Failed to deserialize response from {path}"))
+            })
     }
 
     fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
@@ -80,6 +90,23 @@ impl GitHub {
             self.request::<T, U>("PUT", path, Some(body))
         }
     */
+
+    fn paginate<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<Vec<T>> {
+        let mut items = Vec::new();
+        let mut url = mkurl(path)?;
+        loop {
+            let r = self.raw_request::<()>("GET", url.clone(), None)?;
+            let next_url = get_next_link(&r);
+            items.extend(
+                r.into_json::<Vec<T>>()
+                    .with_context(|| format!("Failed to deserialize response from {path}"))?,
+            );
+            match next_url {
+                Some(u) => url = u,
+                None => return Ok(items),
+            }
+        }
+    }
 
     pub(crate) fn get_repository<R>(&self, repo: &R) -> anyhow::Result<Repository>
     where
@@ -97,6 +124,38 @@ impl GitHub {
         for<'a> R: RepositoryEndpoint<'a>,
     {
         self.post(&format!("{}/pulls", repo.api_url()), pr)
+    }
+
+    pub(crate) fn get_label_names<R>(&self, repo: &R) -> anyhow::Result<Vec<String>>
+    where
+        for<'a> R: RepositoryEndpoint<'a>,
+    {
+        self.paginate::<LabelInfo>(&format!("{}/labels", repo.api_url()))
+            .map(|v| v.into_iter().map(|li| li.name).collect::<Vec<_>>())
+    }
+
+    pub(crate) fn create_label<R>(&self, repo: &R, label: CreateLabel<'_>) -> anyhow::Result<()>
+    where
+        for<'a> R: RepositoryEndpoint<'a>,
+    {
+        self.post::<_, serde::de::IgnoredAny>(&format!("{}/labels", repo.api_url()), label)
+            .map(|_| ())
+    }
+
+    pub(crate) fn add_labels_to_pr<R>(
+        &self,
+        repo: &R,
+        prnum: u64,
+        labels: &[&str],
+    ) -> anyhow::Result<()>
+    where
+        for<'a> R: RepositoryEndpoint<'a>,
+    {
+        self.post::<_, serde::de::IgnoredAny>(
+            &format!("{}/issues/{prnum}/labels", repo.api_url()),
+            labels,
+        )
+        .map(|_| ())
     }
 }
 
@@ -163,4 +222,17 @@ pub(crate) struct PullRequest {
     //#[serde(default)]
     //pub(crate) body: Option<String>,
     //labels
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+struct LabelInfo {
+    name: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub(crate) struct CreateLabel<'a> {
+    pub(crate) name: Cow<'a, str>,
+    pub(crate) color: Cow<'a, str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) description: Option<Cow<'a, str>>,
 }
