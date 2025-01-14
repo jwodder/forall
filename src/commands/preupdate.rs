@@ -1,4 +1,5 @@
 use crate::cmd::CommandError;
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -17,7 +18,7 @@ impl PreUpdate {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             p.stash(opts.quiet)?;
             if !p
                 .runcmd("pre-commit")
@@ -62,12 +63,7 @@ impl PreUpdate {
                 Err(e) => return Err(e.into()),
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

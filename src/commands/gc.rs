@@ -1,3 +1,4 @@
+use crate::logging::logproject;
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -9,7 +10,7 @@ pub(crate) struct Gc;
 impl Gc {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
-            boldln!("{}", p.name());
+            logproject(&p);
             p.runcmd("git").arg("gc").quiet(opts.quiet).run()?;
         }
         Ok(())

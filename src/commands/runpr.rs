@@ -1,4 +1,5 @@
 use crate::github::{CreatePullRequest, GitHub};
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
@@ -67,7 +68,7 @@ impl RunPr {
             if github.get_repository(ghrepo)?.archived {
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             let defbranch = p.default_branch()?;
             p.stash(opts.quiet)?;
             p.runcmd("git")
@@ -85,7 +86,7 @@ impl RunPr {
             // XXX: When adding support for commands that commit, also check
             //      whether $branch is ahead of $defbranch.
             if !p.has_staged_changes()? {
-                println!("> No changes"); // TODO: Style output?
+                log::info!("No changes");
                 p.runcmd("git")
                     .arg("checkout")
                     .arg(defbranch)
@@ -120,12 +121,7 @@ impl RunPr {
             )?;
             println!("{}", pr.html_url); // TODO: Improve?
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

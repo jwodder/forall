@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -15,7 +16,7 @@ impl Pull {
             if !p.has_github() {
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             if !p
                 .runcmd("git")
                 .arg("pull")
@@ -26,12 +27,7 @@ impl Pull {
                 failures.push(p);
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }
