@@ -158,6 +158,7 @@ impl RunPr {
                                 description: None,
                             },
                         )?;
+                        println!("> Created label {lbl:?} in {ghrepo}"); // TODO: Style output?
                     }
                     labels.push(lbl.as_str());
                 }
