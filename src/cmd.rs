@@ -1,7 +1,8 @@
 use crate::logging::logcmd;
 use std::ffi::OsStr;
+use std::fmt::Write as _;
 use std::io::{BufRead, BufReader, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use thiserror::Error;
 
@@ -9,6 +10,7 @@ use thiserror::Error;
 pub(crate) struct CommandPlus {
     cmdline: String,
     cmd: Command,
+    cwd: Option<PathBuf>,
     quiet: bool,
     trace: bool,
     keep_going: bool,
@@ -21,6 +23,7 @@ impl CommandPlus {
         CommandPlus {
             cmdline: quote_osstr(arg0),
             cmd: Command::new(arg0),
+            cwd: None,
             quiet: false,
             trace: false,
             keep_going: false,
@@ -51,6 +54,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn current_dir<P: AsRef<Path>>(&mut self, dir: P) -> &mut Self {
+        self.cwd = Some(dir.as_ref().to_owned());
         self.cmd.current_dir(dir);
         self
     }
@@ -84,8 +88,13 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn cmdline(&self) -> &str {
-        &self.cmdline
+    pub(crate) fn cmdline(&self) -> String {
+        let mut line = self.cmdline.clone();
+        if let Some(ref cwd) = self.cwd {
+            write!(&mut line, " [cwd={}]", cwd.display())
+                .expect("fmt::Write on String should not fail");
+        }
+        line
     }
 
     pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
