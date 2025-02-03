@@ -161,9 +161,7 @@ impl CommandPlus {
         }
     }
 
-    pub(crate) fn combine_stdout_stderr(
-        &mut self,
-    ) -> Result<(String, ExitStatus), CombinedCommandError> {
+    fn combine_stdout_stderr(&mut self) -> Result<(String, ExitStatus), CombinedCommandError> {
         logcmd(self, self.trace);
         // <https://stackoverflow.com/a/72831067/744178>
         let mut child = self
