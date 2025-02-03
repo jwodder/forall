@@ -1,7 +1,7 @@
 use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
 use crate::logging::Verbosity;
 use crate::project::Project;
-use clap::Args;
+use clap::{ArgAction, Args};
 use ghrepo::GHRepo;
 use std::ffi::OsString;
 use std::path::Path;
@@ -14,21 +14,26 @@ pub(crate) struct Options {
     pub(crate) keep_going: bool,
 
     /// Suppress successful command output
-    #[arg(short, long, global = true)]
-    pub(crate) quiet: bool,
+    #[arg(short, long, action = ArgAction::Count, global = true)]
+    pub(crate) quiet: u8,
 
-    #[arg(short, long, global = true, conflicts_with = "quiet")]
-    pub(crate) verbose: bool,
+    #[arg(short, long, action = ArgAction::Count, global = true, conflicts_with = "quiet")]
+    pub(crate) verbose: u8,
 }
 
 impl Options {
     pub(crate) fn verbosity(&self) -> Verbosity {
         match (self.quiet, self.verbose) {
-            (false, false) => Verbosity::Normal,
-            (true, false) => Verbosity::Quiet,
-            (false, true) => Verbosity::Verbose,
-            (true, true) => unreachable!(),
+            (0, 0) => Verbosity::Normal,
+            (_, 0) => Verbosity::Quiet,
+            (0, 1) => Verbosity::Verbose,
+            (0, _) => Verbosity::Verbose2,
+            (_, _) => unreachable!(),
         }
+    }
+
+    pub(crate) fn quiet(&self) -> bool {
+        self.quiet > 0
     }
 }
 
@@ -60,7 +65,7 @@ impl Runner {
     pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
-            .quiet(opts.quiet)
+            .quiet(opts.quiet())
             .keep_going(opts.keep_going)
             .run()
     }
@@ -111,7 +116,7 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
     match CommandPlus::new("git")
         .args(["remote", "get-url", "origin"])
         .current_dir(p)
-        .quiet(true)
+        .trace(true)
         .stderr(std::process::Stdio::null())
         .check_output()
     {

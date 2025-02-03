@@ -92,19 +92,22 @@ impl RunPr {
             }
             logproject(&p);
             let defbranch = p.default_branch()?;
-            p.stash(opts.quiet)?;
+            p.stash(opts.quiet())?;
             p.runcmd("git")
                 .arg("checkout")
                 .arg("-b")
                 .arg(&branch)
                 .arg(defbranch)
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .run()?;
             if !runner.run(&p, opts)? {
                 failures.push(p);
                 continue;
             }
-            p.runcmd("git").args(["add", "."]).quiet(opts.quiet).run()?;
+            p.runcmd("git")
+                .args(["add", "."])
+                .quiet(opts.quiet())
+                .run()?;
             // XXX: When adding support for commands that commit, also check
             //      whether $branch is ahead of $defbranch.
             if !p.has_staged_changes()? {
@@ -112,24 +115,24 @@ impl RunPr {
                 p.runcmd("git")
                     .arg("checkout")
                     .arg(defbranch)
-                    .quiet(opts.quiet)
+                    .quiet(opts.quiet())
                     .run()?;
                 p.runcmd("git")
                     .args(["branch", "-d"])
                     .arg(&branch)
-                    .quiet(opts.quiet)
+                    .quiet(opts.quiet())
                     .run()?;
                 continue;
             }
             p.runcmd("git")
                 .args(["commit", "-m"])
                 .arg(&self.message)
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .run()?;
             p.runcmd("git")
                 .args(["push", "--set-upstream", "origin"])
                 .arg(&branch)
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .run()?;
             let pr = github.create_pull_request(
                 ghrepo,

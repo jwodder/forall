@@ -20,7 +20,7 @@ impl Pull {
             if !p
                 .runcmd("git")
                 .arg("pull")
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .keep_going(opts.keep_going)
                 .run()?
             {

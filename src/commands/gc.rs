@@ -11,7 +11,7 @@ impl Gc {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
             logproject(&p);
-            p.runcmd("git").arg("gc").quiet(opts.quiet).run()?;
+            p.runcmd("git").arg("gc").quiet(opts.quiet()).run()?;
         }
         Ok(())
     }

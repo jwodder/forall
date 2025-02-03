@@ -15,6 +15,7 @@ pub(crate) enum Verbosity {
     #[default]
     Normal,
     Verbose,
+    Verbose2,
 }
 
 impl Verbosity {
@@ -22,7 +23,8 @@ impl Verbosity {
         match self {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Info,
-            Verbosity::Verbose => LevelFilter::Trace,
+            Verbosity::Verbose => LevelFilter::Debug,
+            Verbosity::Verbose2 => LevelFilter::Trace,
         }
     }
 
@@ -30,7 +32,8 @@ impl Verbosity {
         match self {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
-            Verbosity::Verbose => LevelFilter::Trace,
+            Verbosity::Verbose => LevelFilter::Debug,
+            Verbosity::Verbose2 => LevelFilter::Trace,
         }
     }
 
@@ -39,6 +42,7 @@ impl Verbosity {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
             Verbosity::Verbose => LevelFilter::Trace,
+            Verbosity::Verbose2 => LevelFilter::Trace,
         }
     }
 }
@@ -49,6 +53,7 @@ pub(crate) fn init_logging(verbosity: Verbosity) {
         .format(|out, message, record| {
             use AnsiColor::*;
             let style = match (record.level(), record.target()) {
+                (_, t) if t == COMMAND_TARGET => Style::new().fg_color(Some(Cyan.into())),
                 (Level::Error, _) => Style::new().fg_color(Some(Red.into())),
                 (Level::Warn, _) => Style::new().fg_color(Some(Yellow.into())),
                 (Level::Info, t) if t == PROJECT_TARGET => Style::new().bold(),
@@ -71,8 +76,12 @@ pub(crate) fn logproject(p: &Project) {
     log::info!(target: PROJECT_TARGET, "{}", p.name());
 }
 
-pub(crate) fn logcmd(cmd: &CommandPlus) {
-    log::debug!(target: COMMAND_TARGET, "+{}", cmd.cmdline());
+pub(crate) fn logcmd(cmd: &CommandPlus, trace: bool) {
+    if trace {
+        log::trace!(target: COMMAND_TARGET, "+{}", cmd.cmdline());
+    } else {
+        log::debug!(target: COMMAND_TARGET, "+{}", cmd.cmdline());
+    }
 }
 
 pub(crate) fn logrequest(method: &str, url: &url::Url) {

@@ -24,7 +24,7 @@ impl Run {
         for p in projects {
             logproject(&p);
             if self.stash {
-                p.stash(opts.quiet)?;
+                p.stash(opts.quiet())?;
             }
             if !runner.run(&p, opts)? {
                 failures.push(p);

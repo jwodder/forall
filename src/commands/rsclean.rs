@@ -19,7 +19,7 @@ impl Rsclean {
             if !p
                 .runcmd("cargo")
                 .arg("clean")
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .keep_going(opts.keep_going)
                 .run()?
             {

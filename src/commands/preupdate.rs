@@ -19,11 +19,11 @@ impl PreUpdate {
                 continue;
             }
             logproject(&p);
-            p.stash(opts.quiet)?;
+            p.stash(opts.quiet())?;
             if !p
                 .runcmd("pre-commit")
                 .arg("autoupdate")
-                .quiet(opts.quiet)
+                .quiet(opts.quiet())
                 .keep_going(opts.keep_going)
                 .run()?
             {
@@ -56,7 +56,7 @@ impl PreUpdate {
                     p.runcmd("git")
                         .args(["commit", "-m"])
                         .arg(format!("Autoupdate {PRE_COMMIT_FILE}"))
-                        .quiet(opts.quiet)
+                        .quiet(opts.quiet())
                         .keep_going(opts.keep_going)
                         .run()?;
                 }

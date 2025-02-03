@@ -156,6 +156,7 @@ impl Project {
         Ok(self
             .runcmd("git")
             .args(["diff", "--cached", "--quiet"])
+            .trace(true)
             .status()?
             .code()
             == Some(1))
@@ -216,6 +217,7 @@ impl Project {
         CommandPlus::new(cmd)
             .args(args)
             .current_dir(&self.dirpath)
+            .trace(true)
             .check_output()
             .map(|s| s.trim().to_owned())
     }

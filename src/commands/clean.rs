@@ -14,7 +14,7 @@ impl Clean {
                 logproject(&p);
                 p.runcmd("git")
                     .args(["clean", "-dXf"])
-                    .quiet(opts.quiet)
+                    .quiet(opts.quiet())
                     .run()?;
             }
         }

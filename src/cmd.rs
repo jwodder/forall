@@ -10,6 +10,7 @@ pub(crate) struct CommandPlus {
     cmdline: String,
     cmd: Command,
     quiet: bool,
+    trace: bool,
     keep_going: bool,
     stderr_set: bool,
 }
@@ -21,6 +22,7 @@ impl CommandPlus {
             cmdline: quote_osstr(arg0),
             cmd: Command::new(arg0),
             quiet: false,
+            trace: false,
             keep_going: false,
             stderr_set: false,
         }
@@ -69,6 +71,14 @@ impl CommandPlus {
         self
     }
 
+    pub(crate) fn trace(&mut self, yes: bool) -> &mut Self {
+        self.trace = yes;
+        if yes {
+            self.quiet = true;
+        }
+        self
+    }
+
     pub(crate) fn keep_going(&mut self, yes: bool) -> &mut Self {
         self.keep_going = yes;
         self
@@ -79,7 +89,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
-        logcmd(self);
+        logcmd(self, self.trace);
         let rc = if self.quiet {
             let (output, rc) = self.combine_stdout_stderr()?;
             if !rc.success() {
@@ -111,7 +121,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
-        logcmd(self);
+        logcmd(self, self.trace);
         self.cmd.status().map_err(|source| CommandError::Startup {
             cmdline: self.cmdline.clone(),
             source,
@@ -119,7 +129,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
-        logcmd(self);
+        logcmd(self, self.trace);
         if !self.stderr_set {
             self.cmd.stderr(Stdio::inherit());
         }
@@ -145,7 +155,7 @@ impl CommandPlus {
     pub(crate) fn combine_stdout_stderr(
         &mut self,
     ) -> Result<(String, ExitStatus), CombinedCommandError> {
-        logcmd(self);
+        logcmd(self, self.trace);
         // <https://stackoverflow.com/a/72831067/744178>
         let mut child = self
             .cmd
