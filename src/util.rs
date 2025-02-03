@@ -25,16 +25,22 @@ impl Options {
     pub(crate) fn verbosity(&self) -> Verbosity {
         match (self.quiet, self.verbose) {
             (0, false) => Verbosity::Normal,
-            (_, false) => Verbosity::Quiet,
+            (1, false) => Verbosity::Quiet,
+            (_, false) => Verbosity::Quiet2,
             (0, true) => Verbosity::Verbose,
             // Work around <https://github.com/clap-rs/clap/issues/5899>:
             (1, true) => Verbosity::Normal,
-            (_, true) => Verbosity::Quiet,
+            (2, true) => Verbosity::Quiet,
+            (_, true) => Verbosity::Quiet2,
         }
     }
 
     pub(crate) fn quiet(&self) -> bool {
-        self.quiet > 0
+        self.quiet - u8::from(self.verbose) > 0
+    }
+
+    pub(crate) fn quiet2(&self) -> bool {
+        self.quiet - u8::from(self.verbose) > 1
     }
 }
 
@@ -66,7 +72,7 @@ impl Runner {
     pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
-            .quiet(opts.quiet())
+            .quiet(opts.quiet2())
             .keep_going(opts.keep_going)
             .run()
     }

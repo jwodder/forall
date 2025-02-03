@@ -11,6 +11,7 @@ static REQUEST_TARGET: &str = "forall::class::request";
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Verbosity {
+    Quiet2,
     Quiet,
     #[default]
     Normal,
@@ -20,6 +21,7 @@ pub(crate) enum Verbosity {
 impl Verbosity {
     fn level_filter(&self) -> LevelFilter {
         match self {
+            Verbosity::Quiet2 => LevelFilter::Info,
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Info,
             Verbosity::Verbose => LevelFilter::Debug,
@@ -28,6 +30,7 @@ impl Verbosity {
 
     fn command_filter(&self) -> LevelFilter {
         match self {
+            Verbosity::Quiet2 => LevelFilter::Info,
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
             Verbosity::Verbose => LevelFilter::Trace,
@@ -36,6 +39,7 @@ impl Verbosity {
 
     fn request_filter(&self) -> LevelFilter {
         match self {
+            Verbosity::Quiet2 => LevelFilter::Info,
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
             Verbosity::Verbose => LevelFilter::Trace,
