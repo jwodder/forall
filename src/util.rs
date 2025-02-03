@@ -28,7 +28,11 @@ impl Options {
             (_, 0) => Verbosity::Quiet,
             (0, 1) => Verbosity::Verbose,
             (0, _) => Verbosity::Verbose2,
-            (_, _) => unreachable!(),
+            // Work around <https://github.com/clap-rs/clap/issues/5899>:
+            (q, v) if q > v => Verbosity::Quiet,
+            (q, v) if q == v => Verbosity::Normal,
+            (q, v) if v == q + 1 => Verbosity::Verbose,
+            _ => Verbosity::Verbose2,
         }
     }
 
