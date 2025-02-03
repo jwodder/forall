@@ -2,7 +2,7 @@ use crate::github::{CreateLabel, CreatePullRequest, GitHub};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
-use rand::{seq::SliceRandom, thread_rng, Rng};
+use rand::{rng, seq::IndexedRandom, Rng};
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -64,7 +64,7 @@ pub(crate) struct RunPr {
 impl RunPr {
     pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         let github = GitHub::authed()?;
-        let mut colorgen = RandomColor::new(thread_rng());
+        let mut colorgen = RandomColor::new(rng());
         let branch = match self.branch {
             Some(b) => b,
             None => OffsetDateTime::now_local()
