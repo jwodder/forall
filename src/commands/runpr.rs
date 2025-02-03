@@ -85,9 +85,11 @@ impl RunPr {
         let mut failures = Vec::new();
         for p in projects {
             let Some(ghrepo) = p.ghrepo() else {
+                log::debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             };
             if github.get_repository(ghrepo)?.archived {
+                log::debug!("Repository for {} is archived; skipping", p.name());
                 continue;
             }
             logproject(&p);
@@ -144,7 +146,7 @@ impl RunPr {
                     maintainer_can_modify: true,
                 },
             )?;
-            println!("{}", pr.html_url); // TODO: Improve?
+            println!("{}", pr.html_url); // TODO: Improve display?
             if !self.label.is_empty() || !self.soft_label.is_empty() {
                 let label_names = github
                     .get_label_names(ghrepo)?
