@@ -7,7 +7,7 @@ use std::ffi::OsString;
 use std::path::Path;
 use thiserror::Error;
 
-#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct Options {
     /// Don't exit on errors
     #[arg(short, long, global = true)]
@@ -17,30 +17,26 @@ pub(crate) struct Options {
     #[arg(short, long, action = ArgAction::Count, global = true)]
     pub(crate) quiet: u8,
 
-    #[arg(short, long, global = true, conflicts_with = "quiet")]
+    #[arg(short, long, global = true)]
     pub(crate) verbose: bool,
 }
 
 impl Options {
     pub(crate) fn verbosity(&self) -> Verbosity {
-        match (self.quiet, self.verbose) {
-            (0, false) => Verbosity::Normal,
-            (1, false) => Verbosity::Quiet,
-            (_, false) => Verbosity::Quiet2,
-            (0, true) => Verbosity::Verbose,
-            // Work around <https://github.com/clap-rs/clap/issues/5899>:
-            (1, true) => Verbosity::Normal,
-            (2, true) => Verbosity::Quiet,
-            (_, true) => Verbosity::Quiet2,
+        match i16::from(self.verbose) - i16::from(self.quiet) {
+            1.. => Verbosity::Verbose,
+            0 => Verbosity::Normal,
+            -1 => Verbosity::Quiet,
+            _ => Verbosity::Quiet2,
         }
     }
 
     pub(crate) fn quiet(&self) -> bool {
-        self.quiet - u8::from(self.verbose) > 0
+        self.verbosity() <= Verbosity::Quiet
     }
 
     pub(crate) fn quiet2(&self) -> bool {
-        self.quiet - u8::from(self.verbose) > 1
+        self.verbosity() == Verbosity::Quiet
     }
 }
 
@@ -136,4 +132,28 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
 
 pub(crate) fn get_shell() -> OsString {
     std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(0, false, Verbosity::Normal)]
+    #[case(1, false, Verbosity::Quiet)]
+    #[case(2, false, Verbosity::Quiet2)]
+    #[case(3, false, Verbosity::Quiet2)]
+    #[case(0, true, Verbosity::Verbose)]
+    #[case(1, true, Verbosity::Normal)]
+    #[case(2, true, Verbosity::Quiet)]
+    #[case(3, true, Verbosity::Quiet2)]
+    fn test_verbosity(#[case] quiet: u8, #[case] verbose: bool, #[case] verbosity: Verbosity) {
+        let opts = Options {
+            quiet,
+            verbose,
+            ..Options::default()
+        };
+        assert_eq!(opts.verbosity(), verbosity);
+    }
 }
