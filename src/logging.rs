@@ -15,7 +15,6 @@ pub(crate) enum Verbosity {
     #[default]
     Normal,
     Verbose,
-    Verbose2,
 }
 
 impl Verbosity {
@@ -24,7 +23,6 @@ impl Verbosity {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Info,
             Verbosity::Verbose => LevelFilter::Debug,
-            Verbosity::Verbose2 => LevelFilter::Trace,
         }
     }
 
@@ -32,8 +30,7 @@ impl Verbosity {
         match self {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
-            Verbosity::Verbose => LevelFilter::Debug,
-            Verbosity::Verbose2 => LevelFilter::Trace,
+            Verbosity::Verbose => LevelFilter::Trace,
         }
     }
 
@@ -42,7 +39,6 @@ impl Verbosity {
             Verbosity::Quiet => LevelFilter::Info,
             Verbosity::Normal => LevelFilter::Debug,
             Verbosity::Verbose => LevelFilter::Trace,
-            Verbosity::Verbose2 => LevelFilter::Trace,
         }
     }
 }

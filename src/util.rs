@@ -17,22 +17,19 @@ pub(crate) struct Options {
     #[arg(short, long, action = ArgAction::Count, global = true)]
     pub(crate) quiet: u8,
 
-    #[arg(short, long, action = ArgAction::Count, global = true, conflicts_with = "quiet")]
-    pub(crate) verbose: u8,
+    #[arg(short, long, global = true, conflicts_with = "quiet")]
+    pub(crate) verbose: bool,
 }
 
 impl Options {
     pub(crate) fn verbosity(&self) -> Verbosity {
         match (self.quiet, self.verbose) {
-            (0, 0) => Verbosity::Normal,
-            (_, 0) => Verbosity::Quiet,
-            (0, 1) => Verbosity::Verbose,
-            (0, _) => Verbosity::Verbose2,
+            (0, false) => Verbosity::Normal,
+            (_, false) => Verbosity::Quiet,
+            (0, true) => Verbosity::Verbose,
             // Work around <https://github.com/clap-rs/clap/issues/5899>:
-            (q, v) if q > v => Verbosity::Quiet,
-            (q, v) if q == v => Verbosity::Normal,
-            (q, v) if v == q + 1 => Verbosity::Verbose,
-            _ => Verbosity::Verbose2,
+            (1, true) => Verbosity::Normal,
+            (_, true) => Verbosity::Quiet,
         }
     }
 
