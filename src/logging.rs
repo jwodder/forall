@@ -57,7 +57,7 @@ pub(crate) fn init_logging(verbosity: Verbosity) {
                 (Level::Error, _) => Style::new().fg_color(Some(Red.into())),
                 (Level::Warn, _) => Style::new().fg_color(Some(Yellow.into())),
                 (Level::Info, t) if t == PROJECT_TARGET => Style::new().bold(),
-                (Level::Info, _) => Style::new().fg_color(Some(Blue.into())),
+                (Level::Info, _) => Style::new().fg_color(Some(BrightBlue.into())),
                 (Level::Debug, _) => Style::new().fg_color(Some(Cyan.into())),
                 (Level::Trace, _) => Style::new().fg_color(Some(Green.into())),
             };
