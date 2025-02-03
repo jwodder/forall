@@ -16,6 +16,8 @@ impl Clean {
                     .args(["clean", "-dXf"])
                     .quiet(opts.quiet())
                     .run()?;
+            } else {
+                log::debug!("{}: already clean", p.name());
             }
         }
         Ok(())
