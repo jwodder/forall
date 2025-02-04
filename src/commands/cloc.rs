@@ -1,4 +1,5 @@
 use super::ForAll;
+use crate::cmd::CommandKind;
 use crate::project::{Language, Project};
 use anyhow::Context;
 use clap::Args;
@@ -19,6 +20,7 @@ impl ForAll for Cloc {
             .arg(format!("--include-ext={}", p.language().ext()))
             .arg("--json")
             .args(srcs)
+            .kind(CommandKind::Filter) // Don't fill up output with command logs
             .check_output()?;
         let data = serde_json::from_str::<ClocJson>(&output)
             .context("failed to deserialize `cloc` output")?;
