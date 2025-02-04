@@ -69,6 +69,23 @@ subcommand.
 - `-v`, `--verbose` — Be more verbose.  See "Logging" below for more
   information.
 
+Project Names
+-------------
+
+Each project is identified by a name, which is output when operating on the
+project and accepted by the `--skip` option in order to not operate on a
+project.  Project names are determined as follows:
+
+- For Python projects and non-workspace Rust projects, the name is the metadata
+  name of the sole package in the project.
+
+- For non-virtual Rust workspaces, the name is the metadata name of the root
+  package.
+
+- For virtual Rust workspaces, the project's `Cargo.toml` must set
+  `workspace.package.repository` to a GitHub repository URL, and the name of
+  this repository is used as the project name.
+
 Logging
 -------
 
