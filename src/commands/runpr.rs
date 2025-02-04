@@ -85,11 +85,11 @@ impl RunPr {
         let mut failures = Vec::new();
         for p in projects {
             let Some(ghrepo) = p.ghrepo() else {
-                log::debug!("{} does not have a GitHub repository; skipping", p.name());
+                debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             };
             if github.get_repository(ghrepo)?.archived {
-                log::debug!("Repository for {} is archived; skipping", p.name());
+                debug!("Repository for {} is archived; skipping", p.name());
                 continue;
             }
             logproject(&p);
@@ -113,7 +113,7 @@ impl RunPr {
             // XXX: When adding support for commands that commit, also check
             //      whether $branch is ahead of $defbranch.
             if !p.has_staged_changes()? {
-                log::info!("No changes");
+                info!("No changes");
                 p.runcmd("git")
                     .arg("checkout")
                     .arg(defbranch)
@@ -164,7 +164,7 @@ impl RunPr {
                                 description: None,
                             },
                         )?;
-                        log::info!("Created label {lbl:?} in {ghrepo}");
+                        info!("Created label {lbl:?} in {ghrepo}");
                     }
                     labels.push(lbl.as_str());
                 }

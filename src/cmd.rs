@@ -116,9 +116,9 @@ impl CommandPlus {
             Ok(true)
         } else if self.keep_going {
             if let Some(code) = rc.code() {
-                log::error!("[{code}]");
+                error!("[{code}]");
             } else {
-                log::error!("[{rc}]");
+                error!("[{rc}]");
             }
             Ok(false)
         } else {

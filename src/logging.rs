@@ -1,13 +1,9 @@
 use crate::cmd::CommandPlus;
 use crate::project::Project;
-use anstream::AutoStream;
 use anstyle::{AnsiColor, Style};
-use log::{Level, LevelFilter};
-use std::io;
+use std::sync::OnceLock;
 
-static PROJECT_TARGET: &str = "forall::class::project";
-static COMMAND_TARGET: &str = "forall::class::command";
-static REQUEST_TARGET: &str = "forall::class::request";
+static VERBOSITY: OnceLock<Verbosity> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Verbosity {
@@ -18,74 +14,45 @@ pub(crate) enum Verbosity {
     Verbose,
 }
 
-impl Verbosity {
-    fn level_filter(&self) -> LevelFilter {
-        match self {
-            Verbosity::Quiet2 => LevelFilter::Info,
-            Verbosity::Quiet => LevelFilter::Info,
-            Verbosity::Normal => LevelFilter::Info,
-            Verbosity::Verbose => LevelFilter::Debug,
-        }
-    }
-
-    fn command_filter(&self) -> LevelFilter {
-        match self {
-            Verbosity::Quiet2 => LevelFilter::Info,
-            Verbosity::Quiet => LevelFilter::Info,
-            Verbosity::Normal => LevelFilter::Debug,
-            Verbosity::Verbose => LevelFilter::Trace,
-        }
-    }
-
-    fn request_filter(&self) -> LevelFilter {
-        match self {
-            Verbosity::Quiet2 => LevelFilter::Info,
-            Verbosity::Quiet => LevelFilter::Info,
-            Verbosity::Normal => LevelFilter::Debug,
-            Verbosity::Verbose => LevelFilter::Trace,
-        }
-    }
+pub(crate) fn init_logging(level: Verbosity) {
+    let _ = VERBOSITY.set(level);
 }
 
-pub(crate) fn init_logging(verbosity: Verbosity) {
-    let outstream: Box<dyn io::Write + Send> = Box::new(AutoStream::auto(io::stdout()));
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            use AnsiColor::*;
-            let style = match (record.level(), record.target()) {
-                (_, t) if t == COMMAND_TARGET => Style::new().fg_color(Some(Cyan.into())),
-                (Level::Error, _) => Style::new().fg_color(Some(Red.into())),
-                (Level::Warn, _) => Style::new().fg_color(Some(Yellow.into())),
-                (Level::Info, t) if t == PROJECT_TARGET => Style::new().bold(),
-                (Level::Info, _) => Style::new().fg_color(Some(BrightBlue.into())),
-                (Level::Debug, _) => Style::new().fg_color(Some(Cyan.into())),
-                (Level::Trace, _) => Style::new().fg_color(Some(Green.into())),
-            };
-            out.finish(format_args!("{style}{message}{style:#}"));
-        })
-        .level(LevelFilter::Info)
-        .level_for("forall", verbosity.level_filter())
-        .level_for(COMMAND_TARGET, verbosity.command_filter())
-        .level_for(REQUEST_TARGET, verbosity.request_filter())
-        .chain(outstream)
-        .apply()
-        .expect("no other logger should have been previously initialized");
+fn is_active(level: Verbosity) -> bool {
+    level <= VERBOSITY.get().copied().unwrap_or_default()
 }
 
 pub(crate) fn logproject(p: &Project) {
-    log::info!(target: PROJECT_TARGET, "{}", p.name());
+    anstream::println!(
+        "{bold}{name}{bold:#}",
+        name = p.name(),
+        bold = Style::new().bold()
+    );
 }
 
 pub(crate) fn logcmd(cmd: &CommandPlus, trace: bool) {
-    if trace {
-        log::trace!(target: COMMAND_TARGET, "+{}", cmd.cmdline());
+    let level = if trace {
+        Verbosity::Verbose
     } else {
-        log::debug!(target: COMMAND_TARGET, "+{}", cmd.cmdline());
+        Verbosity::Normal
+    };
+    if is_active(level) {
+        anstream::eprintln!(
+            "{style}+{line}{style:#}",
+            line = cmd.cmdline(),
+            style = Style::new().fg_color(Some(AnsiColor::Cyan.into()))
+        );
     }
 }
 
 pub(crate) fn logrequest(method: &str, url: &url::Url) {
-    log::debug!(target: REQUEST_TARGET, "{method} {url}");
+    if is_active(Verbosity::Verbose) {
+        anstream::eprintln!(
+            // TODO: Add a prefix?
+            "{style}{method} {url}{style:#}",
+            style = Style::new().fg_color(Some(AnsiColor::Cyan.into()))
+        );
+    }
 }
 
 pub(crate) fn logfailures(failures: Vec<Project>) {
@@ -94,5 +61,41 @@ pub(crate) fn logfailures(failures: Vec<Project>) {
         for p in failures {
             println!("{}", p.name());
         }
+    }
+}
+
+macro_rules! error {
+    ($($arg:tt)*) => {{
+        $crate::logging::logln(
+            $crate::logging::Verbosity::Quiet2,
+            anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Red.into())),
+            format_args!($($arg)*)
+        );
+    }};
+}
+
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        $crate::logging::logln(
+            $crate::logging::Verbosity::Normal,
+            anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Yellow.into())),
+            format_args!($($arg)*)
+        );
+    }};
+}
+
+macro_rules! debug {
+    ($($arg:tt)*) => {{
+        $crate::logging::logln(
+            $crate::logging::Verbosity::Verbose,
+            anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Yellow.into())),
+            format_args!($($arg)*)
+        );
+    }};
+}
+
+pub(crate) fn logln(level: Verbosity, style: Style, fmtargs: std::fmt::Arguments<'_>) {
+    if is_active(level) {
+        anstream::eprintln!("{style}[·] {fmtargs}{style:#}");
     }
 }

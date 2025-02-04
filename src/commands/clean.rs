@@ -17,7 +17,7 @@ impl Clean {
                     .quiet(opts.quiet())
                     .run()?;
             } else {
-                log::debug!("{}: already clean", p.name());
+                info!("{}: already clean", p.name());
             }
         }
         Ok(())

@@ -1,9 +1,11 @@
+#[macro_use]
+mod logging;
+
 mod cmd;
 mod commands;
 mod finder;
 mod github;
 mod http_util;
-mod logging;
 mod project;
 mod util;
 use crate::commands::Command;

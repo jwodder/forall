@@ -17,7 +17,7 @@ impl Cloc {
             let srcs = p.source_paths()?;
             if srcs.is_empty() {
                 if opts.keep_going {
-                    log::error!("{}: Could not identify source files", p.name());
+                    error!("{}: Could not identify source files", p.name());
                     failures.push(p);
                     continue;
                 } else {
