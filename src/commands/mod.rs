@@ -18,6 +18,7 @@ use self::push::Push;
 use self::rsclean::Rsclean;
 pub(crate) use self::run::Run;
 use self::runpr::RunPr;
+use crate::logging::logerror;
 use crate::project::Project;
 use crate::util::Options;
 use clap::Subcommand;
@@ -55,16 +56,14 @@ impl Command {
             Command::Run(c) => match c.into_forall() {
                 Ok(cmd) => cmd,
                 Err(e) => {
-                    // TODO: Display more stuff:
-                    error!("Failed to initialize command: {e}");
+                    logerror(e.context("Failed to initialize command"));
                     return ExitCode::FAILURE;
                 }
             },
             Command::RunPr(c) => match c.into_forall() {
                 Ok(cmd) => cmd,
                 Err(e) => {
-                    // TODO: Display more stuff:
-                    error!("Failed to initialize command: {e}");
+                    logerror(e.context("Failed to initialize command"));
                     return ExitCode::FAILURE;
                 }
             },
@@ -72,7 +71,7 @@ impl Command {
         let mut failures = Vec::new();
         for p in projects {
             if let Err(e) = cmd.run(&p) {
-                error!("{e}"); // TODO: Improve; display causes, output, & HTTP responses
+                logerror(e);
                 if opts.keep_going {
                     failures.push(p);
                 } else {

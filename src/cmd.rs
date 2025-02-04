@@ -312,6 +312,16 @@ pub(crate) enum CommandError {
     },
 }
 
+impl CommandError {
+    pub(crate) fn output(&self) -> Option<&str> {
+        if let CommandError::Exit { output, .. } = self {
+            output.as_deref()
+        } else {
+            None
+        }
+    }
+}
+
 fn quote_osstr(s: &OsStr) -> String {
     shell_words::quote(&s.to_string_lossy()).to_string()
 }

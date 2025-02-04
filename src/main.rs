@@ -10,7 +10,7 @@ mod project;
 mod util;
 use crate::commands::Command;
 use crate::finder::Finder;
-use crate::logging::init_logging;
+use crate::logging::{init_logging, logerror};
 use crate::util::Options;
 use clap::Parser;
 use std::process::ExitCode;
@@ -39,7 +39,7 @@ fn main() -> ExitCode {
     let projects = match finder.findall() {
         Ok(projects) => projects,
         Err(e) => {
-            error!("{e}"); // TODO: Display more
+            logerror(e.context("Failed to list projects"));
             return ExitCode::FAILURE;
         }
     };

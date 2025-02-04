@@ -1,13 +1,15 @@
-use crate::cmd::CommandPlus;
+use crate::cmd::{CommandError, CommandPlus};
 use crate::project::Project;
 use anstyle::{AnsiColor, Style};
+use indenter::indented;
+use std::fmt::{self, Write};
 use std::sync::OnceLock;
 
 static VERBOSITY: OnceLock<Verbosity> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Verbosity {
-    On,
+    //On,
     Quiet2,
     Quiet,
     #[default]
@@ -52,16 +54,6 @@ pub(crate) fn logrequest(method: &str, url: &url::Url) {
     }
 }
 
-macro_rules! error {
-    ($($arg:tt)*) => {{
-        $crate::logging::logln(
-            $crate::logging::Verbosity::On,
-            anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Red.into())),
-            format_args!($($arg)*)
-        );
-    }};
-}
-
 macro_rules! info {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
@@ -82,8 +74,33 @@ macro_rules! debug {
     }};
 }
 
-pub(crate) fn logln(level: Verbosity, style: Style, fmtargs: std::fmt::Arguments<'_>) {
+pub(crate) fn logln(level: Verbosity, style: Style, fmtargs: fmt::Arguments<'_>) {
     if is_active(level) {
         anstream::eprintln!("{style}[·] {fmtargs}{style:#}");
+    }
+}
+
+pub(crate) fn logerror(e: anyhow::Error) {
+    let style = Style::new().fg_color(Some(AnsiColor::BrightRed.into()));
+    anstream::eprintln!("{style}[!] {e}{style:#}");
+    for src in e.chain().skip(1) {
+        anstream::eprintln!("{style}[!] ⤷ {src}{style:#}");
+    }
+    if let Some(output) = e
+        .downcast_ref::<CommandError>()
+        .and_then(|src| src.output())
+    {
+        if !output.is_empty() {
+            anstream::eprint!("{style}{text}{style:#}", text = IndentOutput(output));
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct IndentOutput<'a>(&'a str);
+
+impl fmt::Display for IndentOutput<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(indented(f).with_str("[Output] "), "{}", self.0)
     }
 }
