@@ -13,6 +13,10 @@ impl Rsclean {
         let mut failures = Vec::new();
         for p in projects {
             if p.language() != Language::Rust || !p.dirpath().join("target").fs_err_try_exists()? {
+                debug!(
+                    "{} is not a Rust project with a target/ directory; skipping",
+                    p.name()
+                );
                 continue;
             }
             logproject(&p);

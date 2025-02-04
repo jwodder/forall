@@ -16,6 +16,7 @@ impl PreUpdate {
         let mut failures = Vec::new();
         for p in projects {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
+                debug!("{} does not use pre-commit; skipping", p.name());
                 continue;
             }
             logproject(&p);

@@ -14,6 +14,7 @@ impl Pull {
         let mut failures = Vec::new();
         for p in projects {
             if !p.has_github() {
+                debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             }
             logproject(&p);

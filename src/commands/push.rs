@@ -15,6 +15,7 @@ impl Push {
         let mut failures = Vec::new();
         for p in projects {
             if !p.has_github() {
+                debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             }
             // TODO: If this fails, emit "{BOLD:name}\n{ERROR:[1]}" and handle
