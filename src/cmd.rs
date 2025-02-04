@@ -1,6 +1,6 @@
 use crate::logging::{is_active, logcmd, Verbosity};
 use std::ffi::OsStr;
-use std::fmt::Write as _;
+use std::fmt;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
@@ -34,9 +34,8 @@ impl CommandKind {
 
 #[derive(Debug)]
 pub(crate) struct CommandPlus {
-    cmdline: String,
+    cmdline: CommandLine,
     cmd: Command,
-    cwd: Option<PathBuf>,
     kind: CommandKind,
     keep_going: bool,
     stderr_set: bool,
@@ -46,9 +45,8 @@ impl CommandPlus {
     pub(crate) fn new<S: AsRef<OsStr>>(arg0: S) -> Self {
         let arg0 = arg0.as_ref();
         CommandPlus {
-            cmdline: quote_osstr(arg0),
+            cmdline: CommandLine::new(arg0),
             cmd: Command::new(arg0),
-            cwd: None,
             kind: CommandKind::default(),
             keep_going: false,
             stderr_set: false,
@@ -57,8 +55,7 @@ impl CommandPlus {
 
     pub(crate) fn arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
         let arg = arg.as_ref();
-        self.cmdline.push(' ');
-        self.cmdline.push_str(&quote_osstr(arg));
+        self.cmdline.arg(arg);
         self.cmd.arg(arg);
         self
     }
@@ -70,15 +67,15 @@ impl CommandPlus {
     {
         for arg in args {
             let arg = arg.as_ref();
-            self.cmdline.push(' ');
-            self.cmdline.push_str(&quote_osstr(arg));
+            self.cmdline.arg(arg);
             self.cmd.arg(arg);
         }
         self
     }
 
     pub(crate) fn current_dir<P: AsRef<Path>>(&mut self, dir: P) -> &mut Self {
-        self.cwd = Some(dir.as_ref().to_owned());
+        let dir = dir.as_ref();
+        self.cmdline.current_dir(dir);
         self.cmd.current_dir(dir);
         self
     }
@@ -104,13 +101,8 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn cmdline(&self) -> String {
-        let mut line = self.cmdline.clone();
-        if let Some(ref cwd) = self.cwd {
-            write!(&mut line, " [cwd={}]", cwd.display())
-                .expect("fmt::Write on String should not fail");
-        }
-        line
+    pub(crate) fn cmdline(&self) -> &CommandLine {
+        &self.cmdline
     }
 
     pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
@@ -124,7 +116,7 @@ impl CommandPlus {
             rc
         } else {
             self.cmd.status().map_err(|source| CommandError::Startup {
-                cmdline: self.cmdline.clone(),
+                cmdline: self.cmdline().clone(),
                 source,
             })?
         };
@@ -139,7 +131,7 @@ impl CommandPlus {
             Ok(false)
         } else {
             Err(CommandError::Exit {
-                cmdline: self.cmdline.clone(),
+                cmdline: self.cmdline().clone(),
                 rc,
             })
         }
@@ -148,7 +140,7 @@ impl CommandPlus {
     pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
         self.cmd.status().map_err(|source| CommandError::Startup {
-            cmdline: self.cmdline.clone(),
+            cmdline: self.cmdline().clone(),
             source,
         })
     }
@@ -162,16 +154,16 @@ impl CommandPlus {
             Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
                 Ok(s) => Ok(s),
                 Err(e) => Err(CommandOutputError::Decode {
-                    cmdline: self.cmdline.clone(),
+                    cmdline: self.cmdline().clone(),
                     source: e.utf8_error(),
                 }),
             },
             Ok(output) => Err(CommandOutputError::Exit {
-                cmdline: self.cmdline.clone(),
+                cmdline: self.cmdline().clone(),
                 rc: output.status,
             }),
             Err(source) => Err(CommandOutputError::Startup {
-                cmdline: self.cmdline.clone(),
+                cmdline: self.cmdline().clone(),
                 source,
             }),
         }
@@ -186,7 +178,7 @@ impl CommandPlus {
             .stderr(Stdio::piped())
             .spawn()
             .map_err(|source| CombinedCommandError::Startup {
-                cmdline: self.cmdline.clone(),
+                cmdline: self.cmdline().clone(),
                 source,
             })?;
         let child_stdout = child
@@ -233,7 +225,7 @@ impl CommandPlus {
         drop(sender);
 
         let rc = child.wait().map_err(|source| CombinedCommandError::Wait {
-            cmdline: self.cmdline.clone(),
+            cmdline: self.cmdline().clone(),
             source,
         })?;
 
@@ -241,7 +233,7 @@ impl CommandPlus {
             Ok(Ok(())) => (),
             Ok(Err(source)) => {
                 return Err(CombinedCommandError::Read {
-                    cmdline: self.cmdline.clone(),
+                    cmdline: self.cmdline().clone(),
                     source,
                 })
             }
@@ -252,7 +244,7 @@ impl CommandPlus {
             Ok(Ok(())) => (),
             Ok(Err(source)) => {
                 return Err(CombinedCommandError::Read {
-                    cmdline: self.cmdline.clone(),
+                    cmdline: self.cmdline().clone(),
                     source,
                 })
             }
@@ -264,50 +256,95 @@ impl CommandPlus {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct CommandLine {
+    line: String,
+    cwd: Option<PathBuf>,
+}
+
+impl CommandLine {
+    fn new(arg0: &OsStr) -> CommandLine {
+        CommandLine {
+            line: quote_osstr(arg0),
+            cwd: None,
+        }
+    }
+
+    fn arg(&mut self, arg: &OsStr) {
+        self.line.push(' ');
+        self.line.push_str(&quote_osstr(arg));
+    }
+
+    fn current_dir(&mut self, cwd: &Path) {
+        self.cwd = Some(cwd.to_owned());
+    }
+}
+
+impl fmt::Display for CommandLine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{tick}{line}{tick}",
+            line = self.line,
+            tick = if f.alternate() { "`" } else { "" }
+        )?;
+        if let Some(ref cwd) = self.cwd {
+            write!(f, " [cwd={}]", cwd.display())?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Error)]
 pub(crate) enum CommandError {
-    #[error("failed to run `{cmdline}`")]
+    #[error("failed to run {cmdline:#}")]
     Startup {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::io::Error,
     },
-    #[error("command `{cmdline}` failed: {rc}")]
-    Exit { cmdline: String, rc: ExitStatus },
+    #[error("command {cmdline:#} failed: {rc}")]
+    Exit {
+        cmdline: CommandLine,
+        rc: ExitStatus,
+    },
     #[error(transparent)]
     Combined(#[from] CombinedCommandError),
 }
 
 #[derive(Debug, Error)]
 pub(crate) enum CommandOutputError {
-    #[error("failed to run `{cmdline}`")]
+    #[error("failed to run {cmdline:#}")]
     Startup {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::io::Error,
     },
-    #[error("command `{cmdline}` failed: {rc}")]
-    Exit { cmdline: String, rc: ExitStatus },
-    #[error("could not decode `{cmdline}` output")]
+    #[error("command {cmdline:#} failed: {rc}")]
+    Exit {
+        cmdline: CommandLine,
+        rc: ExitStatus,
+    },
+    #[error("could not decode {cmdline:#} output")]
     Decode {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::str::Utf8Error,
     },
 }
 
 #[derive(Debug, Error)]
 pub(crate) enum CombinedCommandError {
-    #[error("failed to run `{cmdline}`")]
+    #[error("failed to run {cmdline:#}")]
     Startup {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::io::Error,
     },
-    #[error("error reading from `{cmdline}`")]
+    #[error("error reading from {cmdline:#}")]
     Read {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::io::Error,
     },
-    #[error("error waiting for `{cmdline}` to terminate")]
+    #[error("error waiting for {cmdline:#} to terminate")]
     Wait {
-        cmdline: String,
+        cmdline: CommandLine,
         source: std::io::Error,
     },
 }
