@@ -1,4 +1,5 @@
 use crate::github::{CreateLabel, CreatePullRequest, GitHub};
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
@@ -84,51 +85,42 @@ impl RunPr {
         let mut failures = Vec::new();
         for p in projects {
             let Some(ghrepo) = p.ghrepo() else {
+                debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             };
             if github.get_repository(ghrepo)?.archived {
+                debug!("Repository for {} is archived; skipping", p.name());
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             let defbranch = p.default_branch()?;
-            p.stash(opts.quiet)?;
+            p.stash()?;
             p.runcmd("git")
                 .arg("checkout")
                 .arg("-b")
                 .arg(&branch)
                 .arg(defbranch)
-                .quiet(opts.quiet)
                 .run()?;
             if !runner.run(&p, opts)? {
                 failures.push(p);
                 continue;
             }
-            p.runcmd("git").args(["add", "."]).quiet(opts.quiet).run()?;
+            p.runcmd("git").args(["add", "."]).run()?;
             // XXX: When adding support for commands that commit, also check
             //      whether $branch is ahead of $defbranch.
             if !p.has_staged_changes()? {
-                println!("> No changes"); // TODO: Style output?
-                p.runcmd("git")
-                    .arg("checkout")
-                    .arg(defbranch)
-                    .quiet(opts.quiet)
-                    .run()?;
-                p.runcmd("git")
-                    .args(["branch", "-d"])
-                    .arg(&branch)
-                    .quiet(opts.quiet)
-                    .run()?;
+                info!("No changes");
+                p.runcmd("git").arg("checkout").arg(defbranch).run()?;
+                p.runcmd("git").args(["branch", "-d"]).arg(&branch).run()?;
                 continue;
             }
             p.runcmd("git")
                 .args(["commit", "-m"])
                 .arg(&self.message)
-                .quiet(opts.quiet)
                 .run()?;
             p.runcmd("git")
                 .args(["push", "--set-upstream", "origin"])
                 .arg(&branch)
-                .quiet(opts.quiet)
                 .run()?;
             let pr = github.create_pull_request(
                 ghrepo,
@@ -140,7 +132,7 @@ impl RunPr {
                     maintainer_can_modify: true,
                 },
             )?;
-            println!("{}", pr.html_url); // TODO: Improve?
+            println!("{}", pr.html_url); // TODO: Improve display?
             if !self.label.is_empty() || !self.soft_label.is_empty() {
                 let label_names = github
                     .get_label_names(ghrepo)?
@@ -158,7 +150,7 @@ impl RunPr {
                                 description: None,
                             },
                         )?;
-                        println!("> Created label {lbl:?} in {ghrepo}"); // TODO: Style output?
+                        info!("Created label {lbl:?} in {ghrepo}");
                     }
                     labels.push(lbl.as_str());
                 }
@@ -172,12 +164,7 @@ impl RunPr {
                 }
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

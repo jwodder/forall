@@ -1,21 +1,36 @@
-use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandKind, CommandOutputError, CommandPlus};
+use crate::logging::Verbosity;
 use crate::project::Project;
-use anstyle::Style;
-use clap::Args;
+use clap::{ArgAction, Args};
 use ghrepo::GHRepo;
 use std::ffi::OsString;
 use std::path::Path;
 use thiserror::Error;
 
-#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct Options {
     /// Don't exit on errors
     #[arg(short, long, global = true)]
     pub(crate) keep_going: bool,
 
-    /// Suppress successful command output
+    /// Be less verbose
+    #[arg(short, long, action = ArgAction::Count, global = true)]
+    pub(crate) quiet: u8,
+
+    /// Be more verbose
     #[arg(short, long, global = true)]
-    pub(crate) quiet: bool,
+    pub(crate) verbose: bool,
+}
+
+impl Options {
+    pub(crate) fn verbosity(&self) -> Verbosity {
+        match i16::from(self.verbose) - i16::from(self.quiet) {
+            1.. => Verbosity::Verbose,
+            0 => Verbosity::Normal,
+            -1 => Verbosity::Quiet,
+            _ => Verbosity::Quiet2,
+        }
+    }
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -46,7 +61,7 @@ impl Runner {
     pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
-            .quiet(opts.quiet)
+            .kind(CommandKind::Run)
             .keep_going(opts.keep_going)
             .run()
     }
@@ -91,32 +106,13 @@ pub(crate) enum RunOptsError {
     Canonicalize(#[from] std::io::Error),
 }
 
-macro_rules! boldln {
-    ($($arg:tt)*) => {{
-        $crate::util::styleln(anstyle::Style::new().bold(), format_args!($($arg)*));
-    }};
-}
-
-macro_rules! errorln {
-    ($($arg:tt)*) => {{
-        $crate::util::styleln(
-            anstyle::Style::new().bold().fg_color(Some(anstyle::AnsiColor::Red.into())),
-            format_args!($($arg)*)
-        );
-    }};
-}
-
-pub(crate) fn styleln(style: Style, fmtargs: std::fmt::Arguments<'_>) {
-    anstream::println!("{style}{fmtargs}{style:#}");
-}
-
 pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
     // Don't use ghrepo::LocalRepo::github_remote(), as that doesn't suppress
     // stderr from Git.
     match CommandPlus::new("git")
         .args(["remote", "get-url", "origin"])
         .current_dir(p)
-        .quiet(true)
+        .kind(CommandKind::Filter)
         .stderr(std::process::Stdio::null())
         .check_output()
     {
@@ -129,4 +125,28 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
 
 pub(crate) fn get_shell() -> OsString {
     std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(0, false, Verbosity::Normal)]
+    #[case(1, false, Verbosity::Quiet)]
+    #[case(2, false, Verbosity::Quiet2)]
+    #[case(3, false, Verbosity::Quiet2)]
+    #[case(0, true, Verbosity::Verbose)]
+    #[case(1, true, Verbosity::Normal)]
+    #[case(2, true, Verbosity::Quiet)]
+    #[case(3, true, Verbosity::Quiet2)]
+    fn test_verbosity(#[case] quiet: u8, #[case] verbose: bool, #[case] verbosity: Verbosity) {
+        let opts = Options {
+            quiet,
+            verbose,
+            ..Options::default()
+        };
+        assert_eq!(opts.verbosity(), verbosity);
+    }
 }

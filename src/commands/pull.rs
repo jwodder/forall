@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -13,25 +14,20 @@ impl Pull {
         let mut failures = Vec::new();
         for p in projects {
             if !p.has_github() {
+                debug!("{} does not have a GitHub repository; skipping", p.name());
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             if !p
                 .runcmd("git")
                 .arg("pull")
-                .quiet(opts.quiet)
                 .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

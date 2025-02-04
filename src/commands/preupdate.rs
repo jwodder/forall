@@ -1,4 +1,5 @@
 use crate::cmd::CommandError;
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::Options;
 use clap::Args;
@@ -15,14 +16,14 @@ impl PreUpdate {
         let mut failures = Vec::new();
         for p in projects {
             if !p.dirpath().join(PRE_COMMIT_FILE).fs_err_try_exists()? {
+                debug!("{} does not use pre-commit; skipping", p.name());
                 continue;
             }
-            boldln!("{}", p.name());
-            p.stash(opts.quiet)?;
+            logproject(&p);
+            p.stash()?;
             if !p
                 .runcmd("pre-commit")
                 .arg("autoupdate")
-                .quiet(opts.quiet)
                 .keep_going(opts.keep_going)
                 .run()?
             {
@@ -31,7 +32,6 @@ impl PreUpdate {
             }
             p.runcmd("git").args(["add", PRE_COMMIT_FILE]).run()?;
             // TODO: Suppress the "[{returncode}]" output when this fails:
-            // TODO: Shouldn't this honor --quiet?
             p.runcmd("pre-commit")
                 .args(["run", "-a"])
                 .keep_going(true)
@@ -55,19 +55,13 @@ impl PreUpdate {
                     p.runcmd("git")
                         .args(["commit", "-m"])
                         .arg(format!("Autoupdate {PRE_COMMIT_FILE}"))
-                        .quiet(opts.quiet)
                         .keep_going(opts.keep_going)
                         .run()?;
                 }
                 Err(e) => return Err(e.into()),
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

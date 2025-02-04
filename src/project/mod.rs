@@ -1,6 +1,6 @@
 mod lang;
 pub(crate) use self::lang::*;
-use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandKind, CommandOutputError, CommandPlus};
 use crate::util::get_ghrepo;
 use anyhow::Context;
 use cargo_metadata::{MetadataCommand, TargetKind};
@@ -156,21 +156,19 @@ impl Project {
         Ok(self
             .runcmd("git")
             .args(["diff", "--cached", "--quiet"])
+            .kind(CommandKind::Filter)
             .status()?
             .code()
             == Some(1))
     }
 
-    pub(crate) fn stash(&self, quiet: bool) -> anyhow::Result<()> {
+    pub(crate) fn stash(&self) -> anyhow::Result<()> {
         // TODO: Should --ignore-submodules be set to something?
         if !self
             .readcmd("git", ["status", "--porcelain", "-unormal"])?
             .is_empty()
         {
-            self.runcmd("git")
-                .args(["stash", "-u"])
-                .quiet(quiet)
-                .run()?;
+            self.runcmd("git").args(["stash", "-u"]).run()?;
         }
         Ok(())
     }
@@ -216,6 +214,7 @@ impl Project {
         CommandPlus::new(cmd)
             .args(args)
             .current_dir(&self.dirpath)
+            .kind(CommandKind::Filter)
             .check_output()
             .map(|s| s.trim().to_owned())
     }

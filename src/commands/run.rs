@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::Project;
 use crate::util::{Options, RunOpts, Runner};
 use clap::Args;
@@ -21,20 +22,15 @@ impl Run {
         let runner = Runner::try_from(self.run_opts)?;
         let mut failures = Vec::new();
         for p in projects {
-            boldln!("{}", p.name());
+            logproject(&p);
             if self.stash {
-                p.stash(opts.quiet)?;
+                p.stash()?;
             }
             if !runner.run(&p, opts)? {
                 failures.push(p);
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }

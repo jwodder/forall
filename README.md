@@ -56,14 +56,60 @@ subcommand.
   will instead continue with the remaining projects and will print a list of
   all failures on exit.
 
-- `-q`, `--quiet` — Suppress successful command output
+- `-q`, `--quiet` — Be less verbose; this option can be specified multiple
+  times.  See "Logging" below for more infomation.
 
-- `-R <dirpath>`, `--root <dirpath>` — Start traversing from `<dirpath>`.  Can
-  be specified multiple times to traverse multiple directories.  [default: the
-  current working directory]
+- `-R <dirpath>`, `--root <dirpath>` — Start traversing from `<dirpath>`.  This
+  option can be specified multiple times to traverse multiple directories.
+  [default: the current working directory]
 
 - `--skip <name>` — Do not operate on the given project.  This option can be
   specified multiple times.
+
+- `-v`, `--verbose` — Be more verbose.  See "Logging" below for more
+  information.
+
+Logging
+-------
+
+`forall` logs various messages to stdout and/or stderr during its operation.
+The `-q`/`--quiet` and `-v`/`--verbose` options can be used to control which
+messages are shown.  The following table indicates when each type of message is
+shown for each quiet/verbose level:
+
+| Message Type                      | `-qq` | `-q` |  —  | `-v` | Style  | Stream |
+| --------------------------------- | :---: | :--: | :-: | :--: | ------ | ------ |
+| Project names                     | ✓     | ✓    | ✓   | ✓    | Bold   | stdout |
+| Errors                            | ✓     | ✓    | ✓   | ✓    | Red    | stderr |
+| `run` and `runpr` commands        | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
+| `run` and `runpr` commands output | ✗     | ✓    | ✓   | ✓    | Plain  | stdout |
+| Operational commands              | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
+| Operational commands output       | ✗     | ✗    | ✓   | ✓    | Plain  | stdout |
+| Filter commands                   | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
+| Filter commands output            | ✗     | ✗    | ✗   | ✗    | —      | —      |
+| HTTP requests                     | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
+| Messages about skipped projects   | ✗     | ✗    | ✗   | ✓    | Yellow | stderr |
+| Other informative messages        | ✗     | ✗    | ✓   | ✓    | Yellow | stderr |
+
+Notes:
+
+- If both `--quiet` and `--verbose` are specified on the command line, the
+  `--verbose` negates one instance of `--quiet`.
+
+- Passing more than two `--quiet` options (after applying `--verbose` negation)
+  is equivalent to passing just two.
+
+- The "commands" message types are messages showing each executed command along
+  with its arguments and working directory.
+
+- "`run` and `runpr` commands" are commands passed to the `run` and `runpr`
+  subcommands for execution.
+
+- "Operational commands" are miscellaneous commands run by `forall`, such as
+  `git commit` for `runpr` or `pre-commit autoupdate` for `pre-update`.
+
+- "Filter commands" are commands run in order to determine whether to operate
+  on a project.
 
 `forall list`
 -------------

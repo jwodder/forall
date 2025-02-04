@@ -1,3 +1,4 @@
+use crate::logging::{logfailures, logproject};
 use crate::project::{Language, Project};
 use crate::util::Options;
 use clap::Args;
@@ -12,25 +13,23 @@ impl Rsclean {
         let mut failures = Vec::new();
         for p in projects {
             if p.language() != Language::Rust || !p.dirpath().join("target").fs_err_try_exists()? {
+                debug!(
+                    "{} is not a Rust project with a target/ directory; skipping",
+                    p.name()
+                );
                 continue;
             }
-            boldln!("{}", p.name());
+            logproject(&p);
             if !p
                 .runcmd("cargo")
                 .arg("clean")
-                .quiet(opts.quiet)
                 .keep_going(opts.keep_going)
                 .run()?
             {
                 failures.push(p);
             }
         }
-        if !failures.is_empty() {
-            boldln!("\nFailures:");
-            for p in failures {
-                println!("{}", p.name());
-            }
-        }
+        logfailures(failures);
         Ok(())
     }
 }
