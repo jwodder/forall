@@ -112,11 +112,9 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
         .args(["remote", "get-url", "origin"])
         .current_dir(p)
         .kind(CommandKind::Filter)
-        .stderr(std::process::Stdio::null())
         .check_output()
     {
         Ok(s) => Ok(GHRepo::from_url(s.trim()).ok()),
-        Err(CommandError::Decode { .. }) => Ok(None),
         Err(CommandError::Exit { rc, .. }) if rc.code() == Some(2) => Ok(None),
         Err(e) => Err(e.into()),
     }

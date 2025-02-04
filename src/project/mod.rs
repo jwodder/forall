@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
 use thiserror::Error;
 
 static DEFAULT_BRANCHES: &[&str] = &["main", "master"];
@@ -187,17 +186,12 @@ impl Project {
         S: AsRef<OsStr>,
         I: IntoIterator<Item: AsRef<OsStr>>,
     {
-        let r = CommandPlus::new(cmd)
+        CommandPlus::new(cmd)
             .args(args)
             .current_dir(&self.dirpath)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .run();
-        match r {
-            Ok(()) => Ok(true),
-            Err(CommandError::Exit { .. }) => Ok(false),
-            Err(e) => Err(e.into()),
-        }
+            .status()
+            .map(|rc| rc.success())
+            .map_err(Into::into)
     }
 
     pub(crate) fn runcmd<S: AsRef<OsStr>>(&self, cmd: S) -> CommandPlus {

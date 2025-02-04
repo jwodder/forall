@@ -87,15 +87,12 @@ pub(crate) fn logerror(e: anyhow::Error) {
     for src in e.chain().skip(1) {
         anstream::eprintln!("{style}[!] ⤷ {src}{style:#}");
     }
-    if let Some(output) = e
-        .downcast_ref::<CommandError>()
-        .and_then(|src| src.output())
-    {
-        if !output.is_empty() {
-            anstream::eprint!(
-                "{style}{text}{style:#}",
-                text = Indented(output, "[Output] ")
-            );
+    if let Some(src) = e.downcast_ref::<CommandError>() {
+        if let Some(out) = src.stdout().filter(|s| !s.is_empty()) {
+            anstream::eprint!("{style}{text}{style:#}", text = Indented(out, "[stdout] "));
+        }
+        if let Some(err) = src.stderr().filter(|s| !s.is_empty()) {
+            anstream::eprint!("{style}{text}{style:#}", text = Indented(err, "[stderr] "));
         }
     } else if let Some(body) = e.downcast_ref::<StatusError>().and_then(|src| src.body()) {
         if !body.is_empty() {
