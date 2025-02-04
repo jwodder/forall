@@ -51,10 +51,10 @@ subcommand.
   in the given language.  Possible options are "Python"/"py" and "Rust"/"rs"
   (all case-insensitive).
 
-- `-k`, `--keep-going` — By default, if a subcommand fails for a project,
-  `forall` terminates immediately.  If `--keep-going` is supplied, `forall`
-  will instead continue with the remaining projects and will print a list of
-  all failures on exit.
+- `-k`, `--keep-going` — By default, if a subcommand fails or another error
+  occurs for a project, `forall` terminates immediately.  If `--keep-going` is
+  supplied, `forall` will instead continue with the remaining projects and will
+  print a list of all failures on exit.
 
 - `-q`, `--quiet` — Be less verbose; this option can be specified multiple
   times.  See "Logging" below for more infomation.
@@ -81,6 +81,7 @@ shown for each quiet/verbose level:
 | --------------------------------- | :---: | :--: | :-: | :--: | ------ | ------ |
 | Project names                     | ✓     | ✓    | ✓   | ✓    | Bold   | stdout |
 | Errors                            | ✓     | ✓    | ✓   | ✓    | Red    | stderr |
+| Lists of failures                 | ✓     | ✓    | ✓   | ✓    | Plain  | stdout |
 | `run` and `runpr` commands        | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
 | `run` and `runpr` commands output | ✗     | ✓    | ✓   | ✓    | Plain  | stdout |
 | Operational commands              | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
@@ -98,6 +99,9 @@ Notes:
 
 - Passing more than two `--quiet` options (after applying `--verbose` negation)
   is equivalent to passing just two.
+
+- "Errors" includes captured output from failed commands whose output would
+  otherwise be suppressed.
 
 - The "commands" message types are messages showing each executed command along
   with its arguments and working directory.
