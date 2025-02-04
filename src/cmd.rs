@@ -131,7 +131,7 @@ impl CommandPlus {
         })
     }
 
-    pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
+    pub(crate) fn check_output(&mut self) -> Result<String, CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
         if !self.stderr_set {
             self.cmd.stderr(Stdio::inherit());
@@ -139,23 +139,23 @@ impl CommandPlus {
         match self.cmd.output() {
             Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
                 Ok(s) => Ok(s),
-                Err(e) => Err(CommandOutputError::Decode {
+                Err(e) => Err(CommandError::Decode {
                     cmdline: self.cmdline().clone(),
                     source: e.utf8_error(),
                 }),
             },
-            Ok(output) => Err(CommandOutputError::Exit {
+            Ok(output) => Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc: output.status,
             }),
-            Err(source) => Err(CommandOutputError::Startup {
+            Err(source) => Err(CommandError::Startup {
                 cmdline: self.cmdline().clone(),
                 source,
             }),
         }
     }
 
-    fn combine_stdout_stderr(&mut self) -> Result<(String, ExitStatus), CombinedCommandError> {
+    fn combine_stdout_stderr(&mut self) -> Result<(String, ExitStatus), CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
         // <https://stackoverflow.com/a/72831067/744178>
         let mut child = self
@@ -163,7 +163,7 @@ impl CommandPlus {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|source| CombinedCommandError::Startup {
+            .map_err(|source| CommandError::Startup {
                 cmdline: self.cmdline().clone(),
                 source,
             })?;
@@ -210,7 +210,7 @@ impl CommandPlus {
 
         drop(sender);
 
-        let rc = child.wait().map_err(|source| CombinedCommandError::Wait {
+        let rc = child.wait().map_err(|source| CommandError::Wait {
             cmdline: self.cmdline().clone(),
             source,
         })?;
@@ -218,7 +218,7 @@ impl CommandPlus {
         match stdout_thread.join() {
             Ok(Ok(())) => (),
             Ok(Err(source)) => {
-                return Err(CombinedCommandError::Read {
+                return Err(CommandError::Read {
                     cmdline: self.cmdline().clone(),
                     source,
                 })
@@ -229,7 +229,7 @@ impl CommandPlus {
         match stderr_thread.join() {
             Ok(Ok(())) => (),
             Ok(Err(source)) => {
-                return Err(CombinedCommandError::Read {
+                return Err(CommandError::Read {
                     cmdline: self.cmdline().clone(),
                     source,
                 })
@@ -293,35 +293,10 @@ pub(crate) enum CommandError {
         cmdline: CommandLine,
         rc: ExitStatus,
     },
-    #[error(transparent)]
-    Combined(#[from] CombinedCommandError),
-}
-
-#[derive(Debug, Error)]
-pub(crate) enum CommandOutputError {
-    #[error("failed to run {cmdline:#}")]
-    Startup {
-        cmdline: CommandLine,
-        source: std::io::Error,
-    },
-    #[error("command {cmdline:#} failed: {rc}")]
-    Exit {
-        cmdline: CommandLine,
-        rc: ExitStatus,
-    },
     #[error("could not decode {cmdline:#} output")]
     Decode {
         cmdline: CommandLine,
         source: std::str::Utf8Error,
-    },
-}
-
-#[derive(Debug, Error)]
-pub(crate) enum CombinedCommandError {
-    #[error("failed to run {cmdline:#}")]
-    Startup {
-        cmdline: CommandLine,
-        source: std::io::Error,
     },
     #[error("error reading from {cmdline:#}")]
     Read {
