@@ -1,18 +1,16 @@
+use super::ForAll;
 use crate::logging::logproject;
 use crate::project::Project;
-use crate::util::Options;
 use clap::Args;
 
 /// Run `git gc` on each project
-#[derive(Args, Clone, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Gc;
 
-impl Gc {
-    pub(crate) fn run(self, _opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
-        for p in projects {
-            logproject(&p);
-            p.runcmd("git").arg("gc").run()?;
-        }
+impl ForAll for Gc {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
+        logproject(p);
+        p.runcmd("git").arg("gc").run()?;
         Ok(())
     }
 }

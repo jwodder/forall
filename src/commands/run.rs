@@ -1,6 +1,7 @@
-use crate::logging::{logfailures, logproject};
+use super::ForAll;
+use crate::logging::logproject;
 use crate::project::Project;
-use crate::util::{Options, RunOpts, Runner};
+use crate::util::{RunOpts, Runner};
 use clap::Args;
 
 /// Run a command on each project.
@@ -18,19 +19,28 @@ pub(crate) struct Run {
 }
 
 impl Run {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(super) fn into_forall(self) -> anyhow::Result<Box<dyn ForAll>> {
         let runner = Runner::try_from(self.run_opts)?;
-        let mut failures = Vec::new();
-        for p in projects {
-            logproject(&p);
-            if self.stash {
-                p.stash()?;
-            }
-            if !runner.run(&p, opts)? {
-                failures.push(p);
-            }
+        Ok(Box::new(RunForAll {
+            runner,
+            stash: self.stash,
+        }))
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct RunForAll {
+    runner: Runner,
+    stash: bool,
+}
+
+impl ForAll for RunForAll {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
+        logproject(p);
+        if self.stash {
+            p.stash()?;
         }
-        logfailures(failures);
+        self.runner.run(p)?;
         Ok(())
     }
 }

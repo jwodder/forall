@@ -1,13 +1,16 @@
-use crate::cmd::CommandPlus;
+use crate::cmd::{CommandError, CommandPlus};
+use crate::http_util::StatusError;
 use crate::project::Project;
 use anstyle::{AnsiColor, Style};
+use indenter::indented;
+use std::fmt::{self, Write};
 use std::sync::OnceLock;
 
 static VERBOSITY: OnceLock<Verbosity> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Verbosity {
-    On,
+    //On,
     Quiet2,
     Quiet,
     #[default]
@@ -52,25 +55,6 @@ pub(crate) fn logrequest(method: &str, url: &url::Url) {
     }
 }
 
-pub(crate) fn logfailures(failures: Vec<Project>) {
-    if !failures.is_empty() {
-        anstream::println!("\n{bold}Failures:{bold:#}", bold = Style::new().bold());
-        for p in failures {
-            println!("{}", p.name());
-        }
-    }
-}
-
-macro_rules! error {
-    ($($arg:tt)*) => {{
-        $crate::logging::logln(
-            $crate::logging::Verbosity::On,
-            anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Red.into())),
-            format_args!($($arg)*)
-        );
-    }};
-}
-
 macro_rules! info {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
@@ -91,8 +75,43 @@ macro_rules! debug {
     }};
 }
 
-pub(crate) fn logln(level: Verbosity, style: Style, fmtargs: std::fmt::Arguments<'_>) {
+pub(crate) fn logln(level: Verbosity, style: Style, fmtargs: fmt::Arguments<'_>) {
     if is_active(level) {
         anstream::eprintln!("{style}[·] {fmtargs}{style:#}");
+    }
+}
+
+pub(crate) fn logerror(e: anyhow::Error) {
+    let style = Style::new().fg_color(Some(AnsiColor::BrightRed.into()));
+    anstream::eprintln!("{style}[!] {e}{style:#}");
+    for src in e.chain().skip(1) {
+        anstream::eprintln!("{style}[!] ⤷ {src}{style:#}");
+    }
+    if let Some(output) = e
+        .downcast_ref::<CommandError>()
+        .and_then(|src| src.output())
+    {
+        if !output.is_empty() {
+            anstream::eprint!(
+                "{style}{text}{style:#}",
+                text = Indented(output, "[Output] ")
+            );
+        }
+    } else if let Some(body) = e.downcast_ref::<StatusError>().and_then(|src| src.body()) {
+        if !body.is_empty() {
+            anstream::eprint!(
+                "{style}{text}{style:#}",
+                text = Indented(body, "[Response] ")
+            );
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Indented<'a>(&'a str, &'static str);
+
+impl fmt::Display for Indented<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(indented(f).with_str(self.1), "{}", self.0)
     }
 }

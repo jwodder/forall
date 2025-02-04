@@ -12,6 +12,7 @@ v0.3.0 (in development)
 - Added `--verbose` option
 - `--quiet` can now be specified twice to suppress output from `run` and
   `runpr` commands
+- `--keep-going` now captures all error types
 
 v0.2.0 (2025-01-06)
 -------------------

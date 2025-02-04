@@ -1,6 +1,6 @@
 mod lang;
 pub(crate) use self::lang::*;
-use crate::cmd::{CommandError, CommandKind, CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandKind, CommandPlus};
 use crate::util::get_ghrepo;
 use anyhow::Context;
 use cargo_metadata::{MetadataCommand, TargetKind};
@@ -177,7 +177,7 @@ impl Project {
         let r = self.readcmd("git", ["rev-parse", "--verify", "--quiet", "refs/stash"]);
         match r {
             Ok(stdout) => Ok(!stdout.is_empty()),
-            Err(CommandOutputError::Exit { rc, .. }) if rc.code() == Some(1) => Ok(false),
+            Err(CommandError::Exit { rc, .. }) if rc.code() == Some(1) => Ok(false),
             Err(e) => Err(e.into()),
         }
     }
@@ -194,7 +194,7 @@ impl Project {
             .stderr(Stdio::null())
             .run();
         match r {
-            Ok(_) => Ok(true),
+            Ok(()) => Ok(true),
             Err(CommandError::Exit { .. }) => Ok(false),
             Err(e) => Err(e.into()),
         }
@@ -206,7 +206,7 @@ impl Project {
         cmd
     }
 
-    pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> Result<String, CommandOutputError>
+    pub(crate) fn readcmd<S, I>(&self, cmd: S, args: I) -> Result<String, CommandError>
     where
         S: AsRef<OsStr>,
         I: IntoIterator<Item: AsRef<OsStr>>,

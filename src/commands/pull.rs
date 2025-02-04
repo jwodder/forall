@@ -1,33 +1,22 @@
-use crate::logging::{logfailures, logproject};
+use super::ForAll;
+use crate::logging::logproject;
 use crate::project::Project;
-use crate::util::Options;
 use clap::Args;
 
 /// Run `git pull` on each project
 ///
 /// Only projects that have GitHub remotes are considered.
-#[derive(Args, Clone, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Pull;
 
-impl Pull {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
-        let mut failures = Vec::new();
-        for p in projects {
-            if !p.has_github() {
-                debug!("{} does not have a GitHub repository; skipping", p.name());
-                continue;
-            }
-            logproject(&p);
-            if !p
-                .runcmd("git")
-                .arg("pull")
-                .keep_going(opts.keep_going)
-                .run()?
-            {
-                failures.push(p);
-            }
+impl ForAll for Pull {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
+        if !p.has_github() {
+            debug!("{} does not have a GitHub repository; skipping", p.name());
+        } else {
+            logproject(p);
+            p.runcmd("git").arg("pull").run()?;
         }
-        logfailures(failures);
         Ok(())
     }
 }

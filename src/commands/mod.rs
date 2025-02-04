@@ -18,9 +18,15 @@ use self::push::Push;
 use self::rsclean::Rsclean;
 pub(crate) use self::run::Run;
 use self::runpr::RunPr;
+use crate::logging::logerror;
 use crate::project::Project;
 use crate::util::Options;
 use clap::Subcommand;
+use std::process::ExitCode;
+
+trait ForAll {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()>;
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Subcommand)]
 pub(crate) enum Command {
@@ -37,18 +43,53 @@ pub(crate) enum Command {
 }
 
 impl Command {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
-        match self {
-            Command::List(c) => c.run(opts, projects),
-            Command::Clean(c) => c.run(opts, projects),
-            Command::Cloc(c) => c.run(opts, projects),
-            Command::Gc(c) => c.run(opts, projects),
-            Command::PreUpdate(c) => c.run(opts, projects),
-            Command::Pull(c) => c.run(opts, projects),
-            Command::Push(c) => c.run(opts, projects),
-            Command::Rsclean(c) => c.run(opts, projects),
-            Command::Run(c) => c.run(opts, projects),
-            Command::RunPr(c) => c.run(opts, projects),
+    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> ExitCode {
+        let mut cmd: Box<dyn ForAll> = match self {
+            Command::List(c) => Box::new(c),
+            Command::Clean(c) => Box::new(c),
+            Command::Cloc(c) => Box::new(c),
+            Command::Gc(c) => Box::new(c),
+            Command::PreUpdate(c) => Box::new(c),
+            Command::Pull(c) => Box::new(c),
+            Command::Push(c) => Box::new(c),
+            Command::Rsclean(c) => Box::new(c),
+            Command::Run(c) => match c.into_forall() {
+                Ok(cmd) => cmd,
+                Err(e) => {
+                    logerror(e.context("Failed to initialize command"));
+                    return ExitCode::FAILURE;
+                }
+            },
+            Command::RunPr(c) => match c.into_forall() {
+                Ok(cmd) => cmd,
+                Err(e) => {
+                    logerror(e.context("Failed to initialize command"));
+                    return ExitCode::FAILURE;
+                }
+            },
+        };
+        let mut failures = Vec::new();
+        for p in projects {
+            if let Err(e) = cmd.run(&p) {
+                logerror(e);
+                if opts.keep_going {
+                    failures.push(p);
+                } else {
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        if failures.is_empty() {
+            ExitCode::SUCCESS
+        } else {
+            anstream::println!(
+                "\n{bold}Failures:{bold:#}",
+                bold = anstyle::Style::new().bold()
+            );
+            for p in failures {
+                println!("{}", p.name());
+            }
+            ExitCode::FAILURE
         }
     }
 }

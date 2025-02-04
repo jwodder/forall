@@ -1,7 +1,8 @@
+use super::ForAll;
 use crate::github::{CreateLabel, CreatePullRequest, GitHub};
-use crate::logging::{logfailures, logproject};
+use crate::logging::logproject;
 use crate::project::Project;
-use crate::util::{Options, RunOpts, Runner};
+use crate::util::{RunOpts, Runner};
 use clap::Args;
 use rand::{rng, seq::IndexedRandom, Rng};
 use std::borrow::Cow;
@@ -63,9 +64,9 @@ pub(crate) struct RunPr {
 }
 
 impl RunPr {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(super) fn into_forall(self) -> anyhow::Result<Box<dyn ForAll>> {
         let github = GitHub::authed()?;
-        let mut colorgen = RandomColor::new(rng());
+        let colorgen = RandomColor::new(rng());
         let branch = match self.branch {
             Some(b) => b,
             None => OffsetDateTime::now_local()
@@ -76,95 +77,122 @@ impl RunPr {
         let pr_title = self
             .pr_title
             .as_deref()
-            .unwrap_or_else(|| strip_skip(&self.message));
+            .unwrap_or_else(|| strip_skip(&self.message))
+            .to_owned();
         let pr_body = match self.pr_body_file {
             Some(p) => Some(fs_err::read_to_string(p)?),
             None => None,
         };
         let runner = Runner::try_from(self.run_opts)?;
-        let mut failures = Vec::new();
-        for p in projects {
-            let Some(ghrepo) = p.ghrepo() else {
-                debug!("{} does not have a GitHub repository; skipping", p.name());
-                continue;
-            };
-            if github.get_repository(ghrepo)?.archived {
-                debug!("Repository for {} is archived; skipping", p.name());
-                continue;
-            }
-            logproject(&p);
-            let defbranch = p.default_branch()?;
-            p.stash()?;
+        Ok(Box::new(RunPrForAll {
+            github,
+            colorgen,
+            branch,
+            pr_title,
+            pr_body,
+            runner,
+            label: self.label,
+            soft_label: self.soft_label,
+            message: self.message,
+        }))
+    }
+}
+
+#[derive(Clone, Debug)]
+struct RunPrForAll {
+    github: GitHub,
+    colorgen: RandomColor<rand::rngs::ThreadRng>,
+    branch: String,
+    pr_title: String,
+    pr_body: Option<String>,
+    runner: Runner,
+    label: Vec<String>,
+    soft_label: Vec<String>,
+    message: String,
+}
+
+impl ForAll for RunPrForAll {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
+        let Some(ghrepo) = p.ghrepo() else {
+            debug!("{} does not have a GitHub repository; skipping", p.name());
+            return Ok(());
+        };
+        if self.github.get_repository(ghrepo)?.archived {
+            debug!("Repository for {} is archived; skipping", p.name());
+            return Ok(());
+        }
+        logproject(p);
+        let defbranch = p.default_branch()?;
+        p.stash()?;
+        p.runcmd("git")
+            .arg("checkout")
+            .arg("-b")
+            .arg(&self.branch)
+            .arg(defbranch)
+            .run()?;
+        self.runner.run(p)?;
+        p.runcmd("git").args(["add", "."]).run()?;
+        // XXX: When adding support for commands that commit, also check
+        //      whether $branch is ahead of $defbranch.
+        if !p.has_staged_changes()? {
+            info!("No changes");
+            p.runcmd("git").arg("checkout").arg(defbranch).run()?;
             p.runcmd("git")
-                .arg("checkout")
-                .arg("-b")
-                .arg(&branch)
-                .arg(defbranch)
+                .args(["branch", "-d"])
+                .arg(&self.branch)
                 .run()?;
-            if !runner.run(&p, opts)? {
-                failures.push(p);
-                continue;
+            return Ok(());
+        }
+        p.runcmd("git")
+            .args(["commit", "-m"])
+            .arg(&self.message)
+            .run()?;
+        p.runcmd("git")
+            .args(["push", "--set-upstream", "origin"])
+            .arg(&self.branch)
+            .run()?;
+        let pr = self.github.create_pull_request(
+            ghrepo,
+            CreatePullRequest {
+                title: Cow::from(&self.pr_title),
+                head: Cow::from(&self.branch),
+                base: Cow::from(defbranch),
+                body: self.pr_body.as_deref().map(Cow::from),
+                maintainer_can_modify: true,
+            },
+        )?;
+        println!("{}", pr.html_url); // TODO: Improve display?
+        if !self.label.is_empty() || !self.soft_label.is_empty() {
+            let label_names = self
+                .github
+                .get_label_names(ghrepo)?
+                .into_iter()
+                .map(|s| s.to_ascii_lowercase())
+                .collect::<HashSet<_>>();
+            let mut labels = Vec::new();
+            for lbl in &self.label {
+                if !label_names.contains(&lbl.to_ascii_lowercase()) {
+                    self.github.create_label(
+                        ghrepo,
+                        CreateLabel {
+                            name: Cow::from(lbl),
+                            color: Cow::from(self.colorgen.generate()),
+                            description: None,
+                        },
+                    )?;
+                    info!("Created label {lbl:?} in {ghrepo}");
+                }
+                labels.push(lbl.as_str());
             }
-            p.runcmd("git").args(["add", "."]).run()?;
-            // XXX: When adding support for commands that commit, also check
-            //      whether $branch is ahead of $defbranch.
-            if !p.has_staged_changes()? {
-                info!("No changes");
-                p.runcmd("git").arg("checkout").arg(defbranch).run()?;
-                p.runcmd("git").args(["branch", "-d"]).arg(&branch).run()?;
-                continue;
-            }
-            p.runcmd("git")
-                .args(["commit", "-m"])
-                .arg(&self.message)
-                .run()?;
-            p.runcmd("git")
-                .args(["push", "--set-upstream", "origin"])
-                .arg(&branch)
-                .run()?;
-            let pr = github.create_pull_request(
-                ghrepo,
-                CreatePullRequest {
-                    title: Cow::from(pr_title),
-                    head: Cow::from(&branch),
-                    base: Cow::from(defbranch),
-                    body: pr_body.as_deref().map(Cow::from),
-                    maintainer_can_modify: true,
-                },
-            )?;
-            println!("{}", pr.html_url); // TODO: Improve display?
-            if !self.label.is_empty() || !self.soft_label.is_empty() {
-                let label_names = github
-                    .get_label_names(ghrepo)?
-                    .into_iter()
-                    .map(|s| s.to_ascii_lowercase())
-                    .collect::<HashSet<_>>();
-                let mut labels = Vec::new();
-                for lbl in &self.label {
-                    if !label_names.contains(&lbl.to_ascii_lowercase()) {
-                        github.create_label(
-                            ghrepo,
-                            CreateLabel {
-                                name: Cow::from(lbl),
-                                color: Cow::from(colorgen.generate()),
-                                description: None,
-                            },
-                        )?;
-                        info!("Created label {lbl:?} in {ghrepo}");
-                    }
+            for lbl in &self.soft_label {
+                if label_names.contains(&lbl.to_ascii_lowercase()) {
                     labels.push(lbl.as_str());
                 }
-                for lbl in &self.soft_label {
-                    if label_names.contains(&lbl.to_ascii_lowercase()) {
-                        labels.push(lbl.as_str());
-                    }
-                }
-                if !labels.is_empty() {
-                    github.add_labels_to_pr(ghrepo, pr.number, &labels)?;
-                }
+            }
+            if !labels.is_empty() {
+                self.github.add_labels_to_pr(ghrepo, pr.number, &labels)?;
             }
         }
-        logfailures(failures);
         Ok(())
     }
 }

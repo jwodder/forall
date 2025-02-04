@@ -1,4 +1,4 @@
-use crate::cmd::{CommandError, CommandKind, CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandKind, CommandPlus};
 use crate::logging::Verbosity;
 use crate::project::Project;
 use clap::{ArgAction, Args};
@@ -58,11 +58,10 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
+    pub(crate) fn run(&self, p: &Project) -> Result<(), CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
             .kind(CommandKind::Run)
-            .keep_going(opts.keep_going)
             .run()
     }
 }
@@ -117,8 +116,8 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
         .check_output()
     {
         Ok(s) => Ok(GHRepo::from_url(s.trim()).ok()),
-        Err(CommandOutputError::Decode { .. }) => Ok(None),
-        Err(CommandOutputError::Exit { rc, .. }) if rc.code() == Some(2) => Ok(None),
+        Err(CommandError::Decode { .. }) => Ok(None),
+        Err(CommandError::Exit { rc, .. }) if rc.code() == Some(2) => Ok(None),
         Err(e) => Err(e.into()),
     }
 }
