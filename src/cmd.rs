@@ -1,4 +1,5 @@
 use crate::logging::{is_active, logcmd, Verbosity};
+use bstr::ByteVec; // into_string_lossy()
 use std::ffi::OsStr;
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -93,8 +94,8 @@ impl CommandPlus {
             })?;
             (
                 output.status,
-                String::from_utf8(output.stdout).ok(),
-                String::from_utf8(output.stderr).ok(),
+                Some(output.stdout.into_string_lossy()),
+                Some(output.stderr.into_string_lossy()),
             )
         } else {
             (
@@ -133,18 +134,12 @@ impl CommandPlus {
     pub(crate) fn check_output(&mut self) -> Result<String, CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
         match self.cmd.output() {
-            Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
-                Ok(s) => Ok(s),
-                Err(e) => Err(CommandError::Decode {
-                    cmdline: self.cmdline().clone(),
-                    source: e.utf8_error(),
-                }),
-            },
+            Ok(output) if output.status.success() => Ok(output.stdout.into_string_lossy()),
             Ok(output) => Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc: output.status,
-                stdout: String::from_utf8(output.stdout).ok(),
-                stderr: String::from_utf8(output.stderr).ok(),
+                stdout: Some(output.stdout.into_string_lossy()),
+                stderr: Some(output.stderr.into_string_lossy()),
             }),
             Err(source) => Err(CommandError::Startup {
                 cmdline: self.cmdline().clone(),
@@ -206,11 +201,6 @@ pub(crate) enum CommandError {
         rc: ExitStatus,
         stdout: Option<String>,
         stderr: Option<String>,
-    },
-    #[error("could not decode {cmdline:#} output")]
-    Decode {
-        cmdline: CommandLine,
-        source: std::str::Utf8Error,
     },
 }
 
