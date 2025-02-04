@@ -274,7 +274,6 @@ dependencies = [
  "rand",
  "rstest",
  "serde",
- "serde-jsonlines",
  "serde_json",
  "shell-words",
  "thiserror",
@@ -858,16 +857,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-jsonlines"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "013e069239d98648ea43a9c01845b381445e88de08b5a895ef9302e3bffde03d"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]

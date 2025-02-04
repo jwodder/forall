@@ -13,6 +13,7 @@ use crate::finder::Finder;
 use crate::logging::init_logging;
 use crate::util::Options;
 use clap::Parser;
+use std::process::ExitCode;
 
 /// Operate on each project in a directory
 #[derive(Clone, Debug, Eq, Parser, PartialEq)]
@@ -28,14 +29,20 @@ struct Arguments {
     command: Command,
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> ExitCode {
     let Arguments {
         opts,
         finder,
         command,
     } = Arguments::parse();
     init_logging(opts.verbosity());
-    let projects = finder.findall()?;
+    let projects = match finder.findall() {
+        Ok(projects) => projects,
+        Err(e) => {
+            error!("{e}"); // TODO: Display more
+            return ExitCode::FAILURE;
+        }
+    };
     command.run(opts, projects)
 }
 

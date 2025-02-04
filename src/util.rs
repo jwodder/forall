@@ -58,11 +58,10 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
+    pub(crate) fn run(&self, p: &Project) -> Result<(), CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
             .kind(CommandKind::Run)
-            .keep_going(opts.keep_going)
             .run()
     }
 }

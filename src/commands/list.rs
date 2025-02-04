@@ -1,27 +1,24 @@
+use super::ForAll;
 use crate::project::Project;
-use crate::util::Options;
 use clap::Args;
-use serde_jsonlines::JsonLinesWriter;
 
 /// List all projects
-#[derive(Args, Clone, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct List {
     /// Output JSON
     #[arg(short = 'J', long)]
     json: bool,
 }
 
-impl List {
-    pub(crate) fn run(self, _opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
+impl ForAll for List {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
         if self.json {
-            let mut out = JsonLinesWriter::new(std::io::stdout());
-            for p in projects {
-                out.write(&p.to_details()?)?;
-            }
+            println!(
+                "{}",
+                serde_json::to_string(&p.to_details()?).expect("JSONification should not fail")
+            );
         } else {
-            for p in projects {
-                println!("{}", p.name());
-            }
+            println!("{}", p.name());
         }
         Ok(())
     }

@@ -1,35 +1,24 @@
-use crate::logging::{logfailures, logproject};
+use super::ForAll;
+use crate::logging::logproject;
 use crate::project::{Language, Project};
-use crate::util::Options;
 use clap::Args;
 use fs_err::PathExt;
 
 /// Run `cargo clean` on Rust projects with `target/` directories
-#[derive(Args, Clone, Debug, Eq, PartialEq)]
+#[derive(Args, Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Rsclean;
 
-impl Rsclean {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
-        let mut failures = Vec::new();
-        for p in projects {
-            if p.language() != Language::Rust || !p.dirpath().join("target").fs_err_try_exists()? {
-                debug!(
-                    "{} is not a Rust project with a target/ directory; skipping",
-                    p.name()
-                );
-                continue;
-            }
-            logproject(&p);
-            if !p
-                .runcmd("cargo")
-                .arg("clean")
-                .keep_going(opts.keep_going)
-                .run()?
-            {
-                failures.push(p);
-            }
+impl ForAll for Rsclean {
+    fn run(&mut self, p: &Project) -> anyhow::Result<()> {
+        if p.language() != Language::Rust || !p.dirpath().join("target").fs_err_try_exists()? {
+            debug!(
+                "{} is not a Rust project with a target/ directory; skipping",
+                p.name()
+            );
+        } else {
+            logproject(p);
+            p.runcmd("cargo").arg("clean").run()?;
         }
-        logfailures(failures);
         Ok(())
     }
 }

@@ -194,7 +194,7 @@ impl Project {
             .stderr(Stdio::null())
             .run();
         match r {
-            Ok(_) => Ok(true),
+            Ok(()) => Ok(true),
             Err(CommandError::Exit { .. }) => Ok(false),
             Err(e) => Err(e.into()),
         }

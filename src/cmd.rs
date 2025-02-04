@@ -37,7 +37,6 @@ pub(crate) struct CommandPlus {
     cmdline: CommandLine,
     cmd: Command,
     kind: CommandKind,
-    keep_going: bool,
     stderr_set: bool,
 }
 
@@ -48,7 +47,6 @@ impl CommandPlus {
             cmdline: CommandLine::new(arg0),
             cmd: Command::new(arg0),
             kind: CommandKind::default(),
-            keep_going: false,
             stderr_set: false,
         }
     }
@@ -96,16 +94,11 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn keep_going(&mut self, yes: bool) -> &mut Self {
-        self.keep_going = yes;
-        self
-    }
-
     pub(crate) fn cmdline(&self) -> &CommandLine {
         &self.cmdline
     }
 
-    pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
+    pub(crate) fn run(&mut self) -> Result<(), CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
         let rc = if !is_active(self.kind.output_verbosity()) {
             let (output, rc) = self.combine_stdout_stderr()?;
@@ -121,14 +114,7 @@ impl CommandPlus {
             })?
         };
         if rc.success() {
-            Ok(true)
-        } else if self.keep_going {
-            if let Some(code) = rc.code() {
-                error!("[{code}]");
-            } else {
-                error!("[{rc}]");
-            }
-            Ok(false)
+            Ok(())
         } else {
             Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),

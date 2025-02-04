@@ -52,15 +52,6 @@ pub(crate) fn logrequest(method: &str, url: &url::Url) {
     }
 }
 
-pub(crate) fn logfailures(failures: Vec<Project>) {
-    if !failures.is_empty() {
-        anstream::println!("\n{bold}Failures:{bold:#}", bold = Style::new().bold());
-        for p in failures {
-            println!("{}", p.name());
-        }
-    }
-}
-
 macro_rules! error {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
