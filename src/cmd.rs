@@ -1,7 +1,6 @@
 use crate::logging::{is_active, logcmd, Verbosity};
 use std::ffi::OsStr;
 use std::fmt;
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use thiserror::Error;
@@ -37,7 +36,6 @@ pub(crate) struct CommandPlus {
     cmdline: CommandLine,
     cmd: Command,
     kind: CommandKind,
-    stderr_set: bool,
 }
 
 impl CommandPlus {
@@ -47,7 +45,6 @@ impl CommandPlus {
             cmdline: CommandLine::new(arg0),
             cmd: Command::new(arg0),
             kind: CommandKind::default(),
-            stderr_set: false,
         }
     }
 
@@ -78,17 +75,6 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn stdout<T: Into<Stdio>>(&mut self, cfg: T) -> &mut Self {
-        self.cmd.stdout(cfg);
-        self
-    }
-
-    pub(crate) fn stderr<T: Into<Stdio>>(&mut self, cfg: T) -> &mut Self {
-        self.cmd.stderr(cfg);
-        self.stderr_set = true;
-        self
-    }
-
     pub(crate) fn kind(&mut self, k: CommandKind) -> &mut Self {
         self.kind = k;
         self
@@ -100,16 +86,24 @@ impl CommandPlus {
 
     pub(crate) fn run(&mut self) -> Result<(), CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
-        let (output, rc) = if !is_active(self.kind.output_verbosity()) {
-            let (output, rc) = self.combine_stdout_stderr()?;
-            (Some(output), rc)
+        let (rc, stdout, stderr) = if !is_active(self.kind.output_verbosity()) {
+            let output = self.cmd.output().map_err(|source| CommandError::Startup {
+                cmdline: self.cmdline().clone(),
+                source,
+            })?;
+            (
+                output.status,
+                String::from_utf8(output.stdout).ok(),
+                String::from_utf8(output.stderr).ok(),
+            )
         } else {
             (
-                None,
                 self.cmd.status().map_err(|source| CommandError::Startup {
                     cmdline: self.cmdline().clone(),
                     source,
                 })?,
+                None,
+                None,
             )
         };
         if rc.success() {
@@ -118,24 +112,26 @@ impl CommandPlus {
             Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc,
-                output,
+                stdout,
+                stderr,
             })
         }
     }
 
     pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
-        self.cmd.status().map_err(|source| CommandError::Startup {
-            cmdline: self.cmdline().clone(),
-            source,
-        })
+        self.cmd
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map_err(|source| CommandError::Startup {
+                cmdline: self.cmdline().clone(),
+                source,
+            })
     }
 
     pub(crate) fn check_output(&mut self) -> Result<String, CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
-        if !self.stderr_set {
-            self.cmd.stderr(Stdio::inherit());
-        }
         match self.cmd.output() {
             Ok(output) if output.status.success() => match String::from_utf8(output.stdout) {
                 Ok(s) => Ok(s),
@@ -147,99 +143,14 @@ impl CommandPlus {
             Ok(output) => Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc: output.status,
-                output: String::from_utf8(output.stdout).ok(),
+                stdout: String::from_utf8(output.stdout).ok(),
+                stderr: String::from_utf8(output.stderr).ok(),
             }),
             Err(source) => Err(CommandError::Startup {
                 cmdline: self.cmdline().clone(),
                 source,
             }),
         }
-    }
-
-    fn combine_stdout_stderr(&mut self) -> Result<(String, ExitStatus), CommandError> {
-        logcmd(self, self.kind.cmdline_verbosity());
-        // <https://stackoverflow.com/a/72831067/744178>
-        let mut child = self
-            .cmd
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|source| CommandError::Startup {
-                cmdline: self.cmdline().clone(),
-                source,
-            })?;
-        let child_stdout = child
-            .stdout
-            .take()
-            .expect("child.stdout should be non-None");
-        let child_stderr = child
-            .stderr
-            .take()
-            .expect("child.stderr should be non-None");
-
-        let (sender, receiver) = std::sync::mpsc::channel();
-
-        let stdout_sender = sender.clone();
-        let stdout_thread = std::thread::spawn(move || {
-            let mut stdout = BufReader::new(child_stdout);
-            loop {
-                let mut line = String::new();
-                if stdout.read_line(&mut line)? == 0 {
-                    break;
-                }
-                if stdout_sender.send(line).is_err() {
-                    break;
-                }
-            }
-            Ok(())
-        });
-
-        let stderr_sender = sender.clone();
-        let stderr_thread = std::thread::spawn(move || {
-            let mut stderr = BufReader::new(child_stderr);
-            loop {
-                let mut line = String::new();
-                if stderr.read_line(&mut line)? == 0 {
-                    break;
-                }
-                if stderr_sender.send(line).is_err() {
-                    break;
-                }
-            }
-            Ok(())
-        });
-
-        drop(sender);
-
-        let rc = child.wait().map_err(|source| CommandError::Wait {
-            cmdline: self.cmdline().clone(),
-            source,
-        })?;
-
-        match stdout_thread.join() {
-            Ok(Ok(())) => (),
-            Ok(Err(source)) => {
-                return Err(CommandError::Read {
-                    cmdline: self.cmdline().clone(),
-                    source,
-                })
-            }
-            Err(barf) => std::panic::resume_unwind(barf),
-        }
-
-        match stderr_thread.join() {
-            Ok(Ok(())) => (),
-            Ok(Err(source)) => {
-                return Err(CommandError::Read {
-                    cmdline: self.cmdline().clone(),
-                    source,
-                })
-            }
-            Err(barf) => std::panic::resume_unwind(barf),
-        }
-
-        let output = receiver.into_iter().collect::<String>();
-        Ok((output, rc))
     }
 }
 
@@ -293,29 +204,28 @@ pub(crate) enum CommandError {
     Exit {
         cmdline: CommandLine,
         rc: ExitStatus,
-        output: Option<String>,
+        stdout: Option<String>,
+        stderr: Option<String>,
     },
     #[error("could not decode {cmdline:#} output")]
     Decode {
         cmdline: CommandLine,
         source: std::str::Utf8Error,
     },
-    #[error("error reading from {cmdline:#}")]
-    Read {
-        cmdline: CommandLine,
-        source: std::io::Error,
-    },
-    #[error("error waiting for {cmdline:#} to terminate")]
-    Wait {
-        cmdline: CommandLine,
-        source: std::io::Error,
-    },
 }
 
 impl CommandError {
-    pub(crate) fn output(&self) -> Option<&str> {
-        if let CommandError::Exit { output, .. } = self {
-            output.as_deref()
+    pub(crate) fn stdout(&self) -> Option<&str> {
+        if let CommandError::Exit { stdout, .. } = self {
+            stdout.as_deref()
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn stderr(&self) -> Option<&str> {
+        if let CommandError::Exit { stderr, .. } = self {
+            stderr.as_deref()
         } else {
             None
         }
