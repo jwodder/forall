@@ -1,4 +1,5 @@
 use crate::cmd::{CommandError, CommandPlus};
+use crate::http_util::StatusError;
 use crate::project::Project;
 use anstyle::{AnsiColor, Style};
 use indenter::indented;
@@ -91,16 +92,26 @@ pub(crate) fn logerror(e: anyhow::Error) {
         .and_then(|src| src.output())
     {
         if !output.is_empty() {
-            anstream::eprint!("{style}{text}{style:#}", text = IndentOutput(output));
+            anstream::eprint!(
+                "{style}{text}{style:#}",
+                text = Indented(output, "[Output] ")
+            );
+        }
+    } else if let Some(body) = e.downcast_ref::<StatusError>().and_then(|src| src.body()) {
+        if !body.is_empty() {
+            anstream::eprint!(
+                "{style}{text}{style:#}",
+                text = Indented(body, "[Response] ")
+            );
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct IndentOutput<'a>(&'a str);
+struct Indented<'a>(&'a str, &'static str);
 
-impl fmt::Display for IndentOutput<'_> {
+impl fmt::Display for Indented<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(indented(f).with_str("[Output] "), "{}", self.0)
+        write!(indented(f).with_str(self.1), "{}", self.0)
     }
 }

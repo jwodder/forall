@@ -1,12 +1,12 @@
-use indenter::indented;
 use mime::{Mime, JSON};
 use serde_json::{to_string_pretty, value::Value};
-use std::fmt::{self, Write};
+use thiserror::Error;
 use ureq::Response;
 use url::Url;
 
 /// Error raised for a 4xx or 5xx HTTP response that includes the response body
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
+#[error("{method} request to {url} returned {status}")]
 pub(crate) struct StatusError {
     url: String,
     method: String,
@@ -33,23 +33,11 @@ impl StatusError {
             method: method.to_string(),
         }
     }
-}
 
-impl fmt::Display for StatusError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} request to {} returned {}",
-            self.method, self.url, self.status
-        )?;
-        if let Some(text) = &self.body {
-            write!(indented(f).with_str("    "), "\n\n{text}\n")?;
-        }
-        Ok(())
+    pub(crate) fn body(&self) -> Option<&str> {
+        self.body.as_deref()
     }
 }
-
-impl std::error::Error for StatusError {}
 
 /// Returns `true` iff the response's Content-Type header indicates the body is
 /// JSON
