@@ -13,10 +13,11 @@ pub(crate) struct Options {
     #[arg(short, long, global = true)]
     pub(crate) keep_going: bool,
 
-    /// Suppress successful command output
+    /// Be less verbose
     #[arg(short, long, action = ArgAction::Count, global = true)]
     pub(crate) quiet: u8,
 
+    /// Be more verbose
     #[arg(short, long, global = true)]
     pub(crate) verbose: bool,
 }
