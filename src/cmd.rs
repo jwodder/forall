@@ -1,7 +1,7 @@
 use crate::logging::{is_active, logcmd, Verbosity};
 use std::ffi::OsStr;
 use std::fmt;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use thiserror::Error;
@@ -100,18 +100,17 @@ impl CommandPlus {
 
     pub(crate) fn run(&mut self) -> Result<(), CommandError> {
         logcmd(self, self.kind.cmdline_verbosity());
-        let rc = if !is_active(self.kind.output_verbosity()) {
+        let (output, rc) = if !is_active(self.kind.output_verbosity()) {
             let (output, rc) = self.combine_stdout_stderr()?;
-            if !rc.success() {
-                // TODO: Better error handling here:
-                let _ = std::io::stdout().write_all(output.as_bytes());
-            }
-            rc
+            (Some(output), rc)
         } else {
-            self.cmd.status().map_err(|source| CommandError::Startup {
-                cmdline: self.cmdline().clone(),
-                source,
-            })?
+            (
+                None,
+                self.cmd.status().map_err(|source| CommandError::Startup {
+                    cmdline: self.cmdline().clone(),
+                    source,
+                })?,
+            )
         };
         if rc.success() {
             Ok(())
@@ -119,6 +118,7 @@ impl CommandPlus {
             Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc,
+                output,
             })
         }
     }
@@ -147,6 +147,7 @@ impl CommandPlus {
             Ok(output) => Err(CommandError::Exit {
                 cmdline: self.cmdline().clone(),
                 rc: output.status,
+                output: String::from_utf8(output.stdout).ok(),
             }),
             Err(source) => Err(CommandError::Startup {
                 cmdline: self.cmdline().clone(),
@@ -292,6 +293,7 @@ pub(crate) enum CommandError {
     Exit {
         cmdline: CommandLine,
         rc: ExitStatus,
+        output: Option<String>,
     },
     #[error("could not decode {cmdline:#} output")]
     Decode {
