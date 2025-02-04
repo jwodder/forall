@@ -1,4 +1,4 @@
-use crate::logging::logcmd;
+use crate::logging::{is_active, logcmd, Verbosity};
 use std::ffi::OsStr;
 use std::fmt::Write as _;
 use std::io::{BufRead, BufReader, Write};
@@ -6,13 +6,38 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use thiserror::Error;
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) enum CommandKind {
+    Run,
+    #[default]
+    Operational,
+    Filter,
+}
+
+impl CommandKind {
+    fn cmdline_verbosity(&self) -> Verbosity {
+        match self {
+            CommandKind::Run => Verbosity::Normal,
+            CommandKind::Operational => Verbosity::Normal,
+            CommandKind::Filter => Verbosity::Verbose,
+        }
+    }
+
+    fn output_verbosity(&self) -> Verbosity {
+        match self {
+            CommandKind::Run => Verbosity::Quiet,
+            CommandKind::Operational => Verbosity::Normal,
+            CommandKind::Filter => Verbosity::Off,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct CommandPlus {
     cmdline: String,
     cmd: Command,
     cwd: Option<PathBuf>,
-    quiet: bool,
-    trace: bool,
+    kind: CommandKind,
     keep_going: bool,
     stderr_set: bool,
 }
@@ -24,8 +49,7 @@ impl CommandPlus {
             cmdline: quote_osstr(arg0),
             cmd: Command::new(arg0),
             cwd: None,
-            quiet: false,
-            trace: false,
+            kind: CommandKind::default(),
             keep_going: false,
             stderr_set: false,
         }
@@ -70,16 +94,8 @@ impl CommandPlus {
         self
     }
 
-    pub(crate) fn quiet(&mut self, yes: bool) -> &mut Self {
-        self.quiet = yes;
-        self
-    }
-
-    pub(crate) fn trace(&mut self, yes: bool) -> &mut Self {
-        self.trace = yes;
-        if yes {
-            self.quiet = true;
-        }
+    pub(crate) fn kind(&mut self, k: CommandKind) -> &mut Self {
+        self.kind = k;
         self
     }
 
@@ -98,8 +114,8 @@ impl CommandPlus {
     }
 
     pub(crate) fn run(&mut self) -> Result<bool, CommandError> {
-        logcmd(self, self.trace);
-        let rc = if self.quiet {
+        logcmd(self, self.kind.cmdline_verbosity());
+        let rc = if !is_active(self.kind.output_verbosity()) {
             let (output, rc) = self.combine_stdout_stderr()?;
             if !rc.success() {
                 // TODO: Better error handling here:
@@ -130,7 +146,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn status(&mut self) -> Result<ExitStatus, CommandError> {
-        logcmd(self, self.trace);
+        logcmd(self, self.kind.cmdline_verbosity());
         self.cmd.status().map_err(|source| CommandError::Startup {
             cmdline: self.cmdline.clone(),
             source,
@@ -138,7 +154,7 @@ impl CommandPlus {
     }
 
     pub(crate) fn check_output(&mut self) -> Result<String, CommandOutputError> {
-        logcmd(self, self.trace);
+        logcmd(self, self.kind.cmdline_verbosity());
         if !self.stderr_set {
             self.cmd.stderr(Stdio::inherit());
         }
@@ -162,7 +178,7 @@ impl CommandPlus {
     }
 
     fn combine_stdout_stderr(&mut self) -> Result<(String, ExitStatus), CombinedCommandError> {
-        logcmd(self, self.trace);
+        logcmd(self, self.kind.cmdline_verbosity());
         // <https://stackoverflow.com/a/72831067/744178>
         let mut child = self
             .cmd

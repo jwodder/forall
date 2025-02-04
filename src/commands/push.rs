@@ -28,7 +28,6 @@ impl Push {
                 if !p
                     .runcmd("git")
                     .arg("push")
-                    .quiet(opts.quiet())
                     .keep_going(opts.keep_going)
                     .run()?
                 {

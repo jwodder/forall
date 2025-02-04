@@ -7,18 +7,20 @@ static VERBOSITY: OnceLock<Verbosity> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Verbosity {
+    On,
     Quiet2,
     Quiet,
     #[default]
     Normal,
     Verbose,
+    Off,
 }
 
 pub(crate) fn init_logging(level: Verbosity) {
     let _ = VERBOSITY.set(level);
 }
 
-fn is_active(level: Verbosity) -> bool {
+pub(crate) fn is_active(level: Verbosity) -> bool {
     level <= VERBOSITY.get().copied().unwrap_or_default()
 }
 
@@ -30,12 +32,7 @@ pub(crate) fn logproject(p: &Project) {
     );
 }
 
-pub(crate) fn logcmd(cmd: &CommandPlus, trace: bool) {
-    let level = if trace {
-        Verbosity::Verbose
-    } else {
-        Verbosity::Normal
-    };
+pub(crate) fn logcmd(cmd: &CommandPlus, level: Verbosity) {
     if is_active(level) {
         anstream::eprintln!(
             "{style}+{line}{style:#}",
@@ -67,7 +64,7 @@ pub(crate) fn logfailures(failures: Vec<Project>) {
 macro_rules! error {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
-            $crate::logging::Verbosity::Quiet2,
+            $crate::logging::Verbosity::On,
             anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::Red.into())),
             format_args!($($arg)*)
         );

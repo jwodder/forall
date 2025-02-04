@@ -1,4 +1,4 @@
-use crate::cmd::{CommandError, CommandOutputError, CommandPlus};
+use crate::cmd::{CommandError, CommandKind, CommandOutputError, CommandPlus};
 use crate::logging::Verbosity;
 use crate::project::Project;
 use clap::{ArgAction, Args};
@@ -30,14 +30,6 @@ impl Options {
             _ => Verbosity::Quiet2,
         }
     }
-
-    pub(crate) fn quiet(&self) -> bool {
-        self.verbosity() <= Verbosity::Quiet
-    }
-
-    pub(crate) fn quiet2(&self) -> bool {
-        self.verbosity() == Verbosity::Quiet
-    }
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -68,7 +60,7 @@ impl Runner {
     pub(crate) fn run(&self, p: &Project, opts: Options) -> Result<bool, CommandError> {
         p.runcmd(&self.command)
             .args(self.args.iter())
-            .quiet(opts.quiet2())
+            .kind(CommandKind::Run)
             .keep_going(opts.keep_going)
             .run()
     }
@@ -119,7 +111,7 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
     match CommandPlus::new("git")
         .args(["remote", "get-url", "origin"])
         .current_dir(p)
-        .trace(true)
+        .kind(CommandKind::Filter)
         .stderr(std::process::Stdio::null())
         .check_output()
     {

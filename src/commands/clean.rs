@@ -8,16 +8,13 @@ use clap::Args;
 pub(crate) struct Clean;
 
 impl Clean {
-    pub(crate) fn run(self, opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
+    pub(crate) fn run(self, _opts: Options, projects: Vec<Project>) -> anyhow::Result<()> {
         for p in projects {
             if !p.readcmd("git", ["clean", "-dXn"])?.is_empty() {
                 logproject(&p);
-                p.runcmd("git")
-                    .args(["clean", "-dXf"])
-                    .quiet(opts.quiet())
-                    .run()?;
+                p.runcmd("git").args(["clean", "-dXf"]).run()?;
             } else {
-                info!("{}: already clean", p.name());
+                debug!("{}: already clean", p.name());
             }
         }
         Ok(())
