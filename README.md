@@ -258,6 +258,11 @@ Specifically, for each project that has a non-archived GitHub remote:
 - A pull request is created in the corresponding GitHub repository, and the URL
   of the PR is output.
 
+This command requires a GitHub access token to have been either set via the
+`GH_TOKEN` or `GITHUB_TOKEN` environment variable or else saved with
+[`gh`](https://github.com/cli/cli) in order to interact with the GitHub REST
+API.
+
 ### Options
 
 - `-b <NAME>`, `--branch <NAME>` — Set the name for the new branch from which
