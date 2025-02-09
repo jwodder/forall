@@ -1,3 +1,7 @@
+v0.4.0 (in development)
+-----------------------
+- Renamed `--skip` to `--exclude`
+
 v0.3.0 (2025-02-04)
 -------------------
 - Renamed `--no-has-github` to `--no-github`
