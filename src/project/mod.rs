@@ -189,6 +189,7 @@ impl Project {
         CommandPlus::new(cmd)
             .args(args)
             .current_dir(&self.dirpath)
+            .kind(CommandKind::Filter)
             .status()
             .map(|rc| rc.success())
             .map_err(Into::into)
