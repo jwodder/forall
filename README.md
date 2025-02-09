@@ -35,6 +35,9 @@ subcommand.
 - `--no-def-branch` — Only operate on projects currently not on their default
   branch
 
+- `--exclude <name>` — Do not operate on the given project.  This option can be
+  specified multiple times.
+
 - `-f <shellcmd>`, `--filter <shellcmd>` — Run `$SHELL -c <shellcmd>` with the
   current working directory set to each project's directory and only operate on
   those projects for which the command succeeds
@@ -62,9 +65,6 @@ subcommand.
 - `-R <dirpath>`, `--root <dirpath>` — Start traversing from `<dirpath>`.  This
   option can be specified multiple times to traverse multiple directories.
   [default: the current working directory]
-
-- `--skip <name>` — Do not operate on the given project.  This option can be
-  specified multiple times.
 
 - `-v`, `--verbose` — Be more verbose.  See "Logging" below for more
   information.
