@@ -1,6 +1,7 @@
 v0.4.0 (in development)
 -----------------------
 - Renamed `--skip` to `--exclude`
+- Don't show `--filter` commands unless `--verbose` is given
 
 v0.3.0 (2025-02-04)
 -------------------
