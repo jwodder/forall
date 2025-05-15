@@ -55,6 +55,7 @@ pub(crate) fn logrequest(method: &str, url: &url::Url) {
     }
 }
 
+#[clippy::format_args]
 macro_rules! info {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
@@ -65,6 +66,7 @@ macro_rules! info {
     }};
 }
 
+#[clippy::format_args]
 macro_rules! debug {
     ($($arg:tt)*) => {{
         $crate::logging::logln(
