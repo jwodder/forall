@@ -71,11 +71,9 @@ impl GitHub {
         path: &str,
         payload: Option<T>,
     ) -> anyhow::Result<U> {
-        self.raw_request(method, mkurl(path)?, payload)
-            .and_then(|r| {
-                r.into_json::<U>()
-                    .with_context(|| format!("Failed to deserialize response from {path}"))
-            })
+        let r = self.raw_request(method, mkurl(path)?, payload)?;
+        r.into_json::<U>()
+            .with_context(|| format!("Failed to deserialize response from {path}"))
     }
 
     fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
