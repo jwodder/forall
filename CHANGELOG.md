@@ -2,7 +2,7 @@ v0.4.0 (in development)
 -----------------------
 - Renamed `--skip` to `--exclude`
 - Don't show `--filter` commands unless `--verbose` is given
-- Increased MSRV to 1.81
+- Increased MSRV to 1.82
 
 v0.3.0 (2025-02-04)
 -------------------
