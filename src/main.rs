@@ -5,7 +5,6 @@ mod cmd;
 mod commands;
 mod finder;
 mod github;
-mod http_util;
 mod project;
 mod util;
 use crate::commands::Command;

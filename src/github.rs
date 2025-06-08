@@ -1,13 +1,11 @@
-use crate::http_util::{get_next_link, StatusError};
-use crate::logging::logrequest;
 use anyhow::Context;
 use ghrepo::GHRepo;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
-use ureq::{Agent, AgentBuilder, Response};
-use url::Url;
 
+/* <https://github.com/jwodder/minigh/issues/17>
 static USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
     "/",
@@ -16,102 +14,26 @@ static USER_AGENT: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     ")",
 );
-
-static API_ENDPOINT: &str = "https://api.github.com";
+*/
 
 #[derive(Clone, Debug)]
-pub(crate) struct GitHub {
-    client: Agent,
-}
+pub(crate) struct GitHub(minigh::Client);
 
 impl GitHub {
-    pub(crate) fn new(token: &str) -> GitHub {
-        let auth = format!("Bearer {token}");
-        let client = AgentBuilder::new()
-            .user_agent(USER_AGENT)
-            .https_only(true)
-            .middleware(move |req: ureq::Request, next: ureq::MiddlewareNext<'_>| {
-                next.handle(
-                    req.set("Authorization", &auth)
-                        .set("Accept", "application/vnd.github+json"),
-                )
-            })
-            .build();
-        GitHub { client }
+    pub(crate) fn new(token: &str) -> Result<GitHub, minigh::BuildClientError> {
+        Ok(GitHub(minigh::Client::new(token)?))
     }
 
     pub(crate) fn authed() -> anyhow::Result<GitHub> {
         let token = gh_token::get().context("Failed to retrieve GitHub token")?;
-        Ok(GitHub::new(&token))
-    }
-
-    fn raw_request<T: Serialize>(
-        &self,
-        method: &str,
-        url: Url,
-        payload: Option<T>,
-    ) -> anyhow::Result<Response> {
-        logrequest(method, &url);
-        let req = self.client.request_url(method, &url);
-        let r = if let Some(p) = payload {
-            req.send_json(p)
-        } else {
-            req.call()
-        };
-        match r {
-            Ok(r) => Ok(r),
-            Err(ureq::Error::Status(_, r)) => Err(StatusError::for_response(method, r).into()),
-            Err(e) => Err(e).with_context(|| format!("Failed to make {method} request to {url}")),
-        }
-    }
-
-    fn request<T: Serialize, U: DeserializeOwned>(
-        &self,
-        method: &str,
-        path: &str,
-        payload: Option<T>,
-    ) -> anyhow::Result<U> {
-        let r = self.raw_request(method, mkurl(path)?, payload)?;
-        r.into_json::<U>()
-            .with_context(|| format!("Failed to deserialize response from {path}"))
-    }
-
-    fn get<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<T> {
-        self.request::<(), T>("GET", path, None)
-    }
-
-    fn post<T: Serialize, U: DeserializeOwned>(&self, path: &str, body: T) -> anyhow::Result<U> {
-        self.request::<T, U>("POST", path, Some(body))
-    }
-
-    /*
-        fn put<T: Serialize, U: DeserializeOwned>(&self, path: &str, body: T) -> anyhow::Result<U> {
-            self.request::<T, U>("PUT", path, Some(body))
-        }
-    */
-
-    fn paginate<T: DeserializeOwned>(&self, path: &str) -> anyhow::Result<Vec<T>> {
-        let mut items = Vec::new();
-        let mut url = mkurl(path)?;
-        loop {
-            let r = self.raw_request::<()>("GET", url.clone(), None)?;
-            let next_url = get_next_link(&r);
-            items.extend(
-                r.into_json::<Vec<T>>()
-                    .with_context(|| format!("Failed to deserialize response from {path}"))?,
-            );
-            match next_url {
-                Some(u) => url = u,
-                None => return Ok(items),
-            }
-        }
+        GitHub::new(&token).map_err(Into::into)
     }
 
     pub(crate) fn get_repository<R>(&self, repo: &R) -> anyhow::Result<Repository>
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.get(&repo.api_url().to_string())
+        self.0.get(&repo.api_url().to_string()).map_err(Into::into)
     }
 
     pub(crate) fn create_pull_request<R>(
@@ -122,23 +44,29 @@ impl GitHub {
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.post(&format!("{}/pulls", repo.api_url()), pr)
+        self.0
+            .post(&format!("{}/pulls", repo.api_url()), &pr)
+            .map_err(Into::into)
     }
 
     pub(crate) fn get_label_names<R>(&self, repo: &R) -> anyhow::Result<Vec<String>>
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.paginate::<LabelInfo>(&format!("{}/labels", repo.api_url()))
-            .map(|v| v.into_iter().map(|li| li.name).collect::<Vec<_>>())
+        self.0
+            .paginate::<LabelInfo>(&format!("{}/labels", repo.api_url()))
+            .map_ok(|li| li.name)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
     }
 
     pub(crate) fn create_label<R>(&self, repo: &R, label: CreateLabel<'_>) -> anyhow::Result<()>
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.post::<_, serde::de::IgnoredAny>(&format!("{}/labels", repo.api_url()), label)
-            .map(|_| ())
+        self.0
+            .post::<_, serde::de::IgnoredAny>(&format!("{}/labels", repo.api_url()), &label)?;
+        Ok(())
     }
 
     pub(crate) fn add_labels_to_pr<R>(
@@ -150,19 +78,12 @@ impl GitHub {
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.post::<_, serde::de::IgnoredAny>(
+        self.0.post::<_, serde::de::IgnoredAny>(
             &format!("{}/issues/{prnum}/labels", repo.api_url()),
-            labels,
-        )
-        .map(|_| ())
+            &labels,
+        )?;
+        Ok(())
     }
-}
-
-fn mkurl(path: &str) -> anyhow::Result<Url> {
-    Url::parse(API_ENDPOINT)
-        .context("Failed to construct a Url for the GitHub API endpoint")?
-        .join(path)
-        .with_context(|| format!("Failed to construct a GitHub API URL with path {path:?}"))
 }
 
 pub(crate) trait RepositoryEndpoint<'a> {

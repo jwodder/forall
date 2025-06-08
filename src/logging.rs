@@ -1,8 +1,8 @@
 use crate::cmd::{CommandError, CommandPlus};
-use crate::http_util::StatusError;
 use crate::project::Project;
 use anstyle::{AnsiColor, Style};
 use indenter::indented;
+use log::{Log, Metadata, Record};
 use std::fmt::{self, Write};
 use std::sync::OnceLock;
 
@@ -19,8 +19,38 @@ pub(crate) enum Verbosity {
     Off,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Logger;
+
+impl Log for Logger {
+    fn enabled(&self, metadata: &Metadata<'_>) -> bool {
+        let top = match metadata.target().split_once("::") {
+            Some((pre, _)) => pre,
+            None => metadata.target(),
+        };
+        top == "minigh"
+    }
+
+    fn log(&self, record: &Record<'_>) {
+        anstream::eprintln!(
+            // TODO: Add a prefix?
+            "{style}{msg}{style:#}",
+            style = Style::new().fg_color(Some(AnsiColor::Cyan.into())),
+            msg = record.args(),
+        );
+    }
+
+    fn flush(&self) {}
+}
+
 pub(crate) fn init_logging(level: Verbosity) {
     let _ = VERBOSITY.set(level);
+    log::set_logger(&Logger).expect("no other logger should have been previously initialized");
+    log::set_max_level(if level >= Verbosity::Verbose {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Off
+    });
 }
 
 pub(crate) fn is_active(level: Verbosity) -> bool {
@@ -40,16 +70,6 @@ pub(crate) fn logcmd(cmd: &CommandPlus, level: Verbosity) {
         anstream::eprintln!(
             "{style}+{line}{style:#}",
             line = cmd.cmdline(),
-            style = Style::new().fg_color(Some(AnsiColor::Cyan.into()))
-        );
-    }
-}
-
-pub(crate) fn logrequest(method: &str, url: &url::Url) {
-    if is_active(Verbosity::Verbose) {
-        anstream::eprintln!(
-            // TODO: Add a prefix?
-            "{style}{method} {url}{style:#}",
             style = Style::new().fg_color(Some(AnsiColor::Cyan.into()))
         );
     }
@@ -96,13 +116,14 @@ pub(crate) fn logerror(e: anyhow::Error) {
         if let Some(err) = src.stderr().filter(|s| !s.is_empty()) {
             anstream::eprint!("{style}{text}{style:#}", text = Indented(err, "[stderr] "));
         }
-    } else if let Some(body) = e.downcast_ref::<StatusError>().and_then(|src| src.body()) {
-        if !body.is_empty() {
-            anstream::eprint!(
-                "{style}{text}{style:#}",
-                text = Indented(body, "[Response] ")
-            );
-        }
+    } else if let Some(body) = e
+        .downcast_ref::<minigh::RequestError>()
+        .and_then(|src| src.body())
+    {
+        anstream::eprint!(
+            "{style}{text}{style:#}",
+            text = Indented(body, "[Response] ")
+        );
     }
 }
 
