@@ -3,7 +3,6 @@ use ghrepo::GHRepo;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::fmt;
 
 /* <https://github.com/jwodder/minigh/issues/17>
 static USER_AGENT: &str = concat!(
@@ -33,7 +32,7 @@ impl GitHub {
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.0.get(&repo.api_url().to_string()).map_err(Into::into)
+        self.0.get(repo.api_url().as_ref()).map_err(Into::into)
     }
 
     pub(crate) fn create_pull_request<R>(
@@ -45,7 +44,7 @@ impl GitHub {
         for<'a> R: RepositoryEndpoint<'a>,
     {
         self.0
-            .post(&format!("{}/pulls", repo.api_url()), &pr)
+            .post(&format!("{}/pulls", repo.api_url().as_ref()), &pr)
             .map_err(Into::into)
     }
 
@@ -54,7 +53,7 @@ impl GitHub {
         for<'a> R: RepositoryEndpoint<'a>,
     {
         self.0
-            .paginate::<LabelInfo>(&format!("{}/labels", repo.api_url()))
+            .paginate::<LabelInfo>(&format!("{}/labels", repo.api_url().as_ref()))
             .map_ok(|li| li.name)
             .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
@@ -64,8 +63,10 @@ impl GitHub {
     where
         for<'a> R: RepositoryEndpoint<'a>,
     {
-        self.0
-            .post::<_, serde::de::IgnoredAny>(&format!("{}/labels", repo.api_url()), &label)?;
+        self.0.post::<_, serde::de::IgnoredAny>(
+            &format!("{}/labels", repo.api_url().as_ref()),
+            &label,
+        )?;
         Ok(())
     }
 
@@ -79,7 +80,7 @@ impl GitHub {
         for<'a> R: RepositoryEndpoint<'a>,
     {
         self.0.post::<_, serde::de::IgnoredAny>(
-            &format!("{}/issues/{prnum}/labels", repo.api_url()),
+            &format!("{}/issues/{prnum}/labels", repo.api_url().as_ref()),
             &labels,
         )?;
         Ok(())
@@ -87,7 +88,7 @@ impl GitHub {
 }
 
 pub(crate) trait RepositoryEndpoint<'a> {
-    type Url: fmt::Display;
+    type Url: AsRef<str>;
 
     fn api_url(&'a self) -> Self::Url;
 }
