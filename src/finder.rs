@@ -55,6 +55,22 @@ pub(crate) struct Finder {
     /// traverse multiple directories.  [default: current directory]
     #[arg(short = 'R', long, global = true, value_name = "DIRPATH")]
     root: Vec<PathBuf>,
+
+    /// Only operate on Rust workspaces
+    #[arg(short = 'W', long, overrides_with = "not_workspace", global = true)]
+    workspace: bool,
+
+    /// Only operate on projects that are not Rust workspaces
+    #[arg(long, global = true)]
+    not_workspace: bool,
+
+    /// Only operate on Rust virtual workspaces
+    #[arg(long, overrides_with = "not_virtual", global = true)]
+    r#virtual: bool,
+
+    /// Only operate on projects that are not Rust virtual workspaces
+    #[arg(long, global = true)]
+    not_virtual: bool,
 }
 
 impl Finder {
@@ -130,6 +146,16 @@ impl Finder {
                 return Ok(false);
             }
         }
+        if let Some(flag) = self.is_workspace() {
+            if p.is_workspace() != flag {
+                return Ok(false);
+            }
+        }
+        if let Some(flag) = self.is_virtual() {
+            if p.is_virtual_workspace() != flag {
+                return Ok(false);
+            }
+        }
         if let Some(ref cmd) = self.filter {
             if !p.check(shell, ["-c", cmd])? {
                 return Ok(false);
@@ -158,6 +184,24 @@ impl Finder {
 
     fn has_stash(&self) -> Option<bool> {
         match (self.has_stash, self.no_stash) {
+            (false, false) => None,
+            (true, false) => Some(true),
+            (false, true) => Some(false),
+            (true, true) => unreachable!(),
+        }
+    }
+
+    fn is_workspace(&self) -> Option<bool> {
+        match (self.workspace, self.not_workspace) {
+            (false, false) => None,
+            (true, false) => Some(true),
+            (false, true) => Some(false),
+            (true, true) => unreachable!(),
+        }
+    }
+
+    fn is_virtual(&self) -> Option<bool> {
+        match (self.r#virtual, self.not_virtual) {
             (false, false) => None,
             (true, false) => Some(true),
             (false, true) => Some(false),
