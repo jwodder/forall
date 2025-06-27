@@ -109,6 +109,14 @@ impl Project {
         })
     }
 
+    pub(crate) fn is_workspace(&self) -> bool {
+        self.is_workspace
+    }
+
+    pub(crate) fn is_virtual_workspace(&self) -> bool {
+        self.is_virtual_workspace
+    }
+
     pub(crate) fn source_paths(&self) -> anyhow::Result<Vec<PathBuf>> {
         match self.language {
             Language::Python => {

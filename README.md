@@ -66,6 +66,15 @@ subcommand.
   option can be specified multiple times to traverse multiple directories.
   [default: the current working directory]
 
+- `-W`, `--workspace` — Only operate on projects that are Rust workspaces
+
+-  `--not-workspace` — Only operate on projects that are not Rust workspaces
+
+- `--virtual` — Only operate on projects that are Rust virtual workspaces
+
+-  `--not-virtual` — Only operate on projects that are not Rust virtual
+   workspaces
+
 - `-v`, `--verbose` — Be more verbose.  See "Logging" below for more
   information.
 
@@ -73,7 +82,7 @@ Project Names
 -------------
 
 Each project is identified by a name, which is output when operating on the
-project and accepted by the `--skip` option in order to not operate on a
+project and accepted by the `--exclude` option in order to not operate on a
 project.  Project names are determined as follows:
 
 - For Python projects and non-workspace Rust projects, the name is the metadata
@@ -120,8 +129,8 @@ Notes:
 - "Errors" includes captured output from failed commands whose output would
   otherwise be suppressed.
 
-- The "commands" message types are messages showing each executed command along
-  with its arguments and working directory.
+- The "commands" message types are messages showing each executed command,
+  including arguments and working directory.
 
 - "`run` and `runpr` commands" are commands passed to the `run` and `runpr`
   subcommands for execution.
@@ -144,7 +153,6 @@ Print the name of each project in the directory tree in sorted order.
 - `-J`, `--json` — Instead of printing the name of each project, print
   newline-delimited JSON objects describing each project.  Each object contains
   the following fields:
-
     - `name` — project name
     - `dirpath` — path to the directory in which the project is located
     - `language` — the project's language (`"Python"` or `"Rust"`)
