@@ -2,7 +2,7 @@ v0.4.0 (in development)
 -----------------------
 - Renamed `--skip` to `--exclude`
 - Don't show `--filter` commands unless `--verbose` is given
-- Increased MSRV to 1.82
+- Increased MSRV to 1.86
 - Added options for filtering/excluding Rust workspaces & virtual workspaces
 
 v0.3.0 (2025-02-04)
