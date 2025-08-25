@@ -15,7 +15,7 @@ anstream = "0.6.18"
 anstyle = "1.0.10"
 anyhow = "1.0.94"
 bstr = { version = "1.11.3", default-features = false, features = ["alloc"] }
-cargo_metadata = "0.21.0"
+cargo_metadata = "0.22.0"
 clap = { version = "4.5.23", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"] }
 fs-err = "3.0.0"
 gh-token = "0.1.7"
