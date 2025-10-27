@@ -25,7 +25,7 @@ impl ForAll for PreUpdate {
             Ok(()) | Err(CommandError::Exit { .. }) => (),
             Err(e) => return Err(e.into()),
         }
-        p.runcmd("git").args(["add", "-a"]).run()?;
+        p.runcmd("git").args(["add", "-u"]).run()?;
         // Run pre-commit again in order to check for linting & similar
         // errors without the rewriting of files (which also causes
         // pre-commit to exit nonzero) causing false positives:
