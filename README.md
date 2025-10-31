@@ -103,20 +103,20 @@ The `-q`/`--quiet` and `-v`/`--verbose` options can be used to control which
 messages are shown.  The following table indicates when each type of message is
 shown for each quiet/verbose level:
 
-| Message Type                      | `-qq` | `-q` |  —  | `-v` | Style  | Stream |
-| --------------------------------- | :---: | :--: | :-: | :--: | ------ | ------ |
-| Project names                     | ✓     | ✓    | ✓   | ✓    | Bold   | stdout |
-| Errors                            | ✓     | ✓    | ✓   | ✓    | Red    | stderr |
-| Lists of failures                 | ✓     | ✓    | ✓   | ✓    | Plain  | stdout |
-| `run` and `runpr` commands        | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
-| `run` and `runpr` commands output | ✗     | ✓    | ✓   | ✓    | Plain  | stdout |
-| Operational commands              | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
-| Operational commands output       | ✗     | ✗    | ✓   | ✓    | Plain  | stdout |
-| Filter commands                   | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
-| Filter commands output            | ✗     | ✗    | ✗   | ✗    | —      | —      |
-| HTTP requests                     | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
-| Messages about skipped projects   | ✗     | ✗    | ✗   | ✓    | Yellow | stderr |
-| Other informative messages        | ✗     | ✗    | ✓   | ✓    | Yellow | stderr |
+| Message Type                       | `-qq` | `-q` |  —  | `-v` | Style  | Stream |
+| ---------------------------------- | :---: | :--: | :-: | :--: | ------ | ------ |
+| Project names                      | ✓     | ✓    | ✓   | ✓    | Bold   | stdout |
+| Errors                             | ✓     | ✓    | ✓   | ✓    | Red    | stderr |
+| Lists of failures                  | ✓     | ✓    | ✓   | ✓    | Plain  | stdout |
+| `run` and `run-pr` commands        | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
+| `run` and `run-pr` commands output | ✗     | ✓    | ✓   | ✓    | Plain  | stdout |
+| Operational commands               | ✗     | ✗    | ✓   | ✓    | Cyan   | stderr |
+| Operational commands output        | ✗     | ✗    | ✓   | ✓    | Plain  | stdout |
+| Filter commands                    | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
+| Filter commands output             | ✗     | ✗    | ✗   | ✗    | —      | —      |
+| HTTP requests                      | ✗     | ✗    | ✗   | ✓    | Cyan   | stderr |
+| Messages about skipped projects    | ✗     | ✗    | ✗   | ✓    | Yellow | stderr |
+| Other informative messages         | ✗     | ✗    | ✓   | ✓    | Yellow | stderr |
 
 Notes:
 
@@ -132,11 +132,11 @@ Notes:
 - The "commands" message types are messages showing each executed command,
   including arguments and working directory.
 
-- "`run` and `runpr` commands" are commands passed to the `run` and `runpr`
+- "`run` and `run-pr` commands" are commands passed to the `run` and `run-pr`
   subcommands for execution.
 
 - "Operational commands" are miscellaneous commands run by `forall`, such as
-  `git commit` for `runpr` or `pre-commit autoupdate` for `pre-update`.
+  `git commit` for `run-pr` or `pre-commit autoupdate` for `pre-update`.
 
 - "Filter commands" are commands run in order to determine whether to operate
   on a project.

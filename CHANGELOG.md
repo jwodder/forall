@@ -19,7 +19,7 @@ v0.3.0 (2025-02-04)
 - Log executed external commands and HTTP requests
 - Added `--verbose` option
 - `--quiet` can now be specified twice to suppress output from `run` and
-  `runpr` commands
+  `run-pr` commands
 - `--keep-going` now captures all error types
 
 v0.2.0 (2025-01-06)
