@@ -1,4 +1,4 @@
-use crate::logging::{is_active, logcmd, Verbosity};
+use crate::logging::{Verbosity, is_active, logcmd};
 use bstr::ByteVec; // into_string_lossy()
 use std::ffi::OsStr;
 use std::fmt;

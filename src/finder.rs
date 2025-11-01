@@ -110,10 +110,10 @@ impl Finder {
             }
             let subpath = entry.path();
             if subpath.join(".git").fs_err_try_exists()? {
-                if let Some(p) = Project::try_for_dirpath(subpath)? {
-                    if self.accept(&p, shell)? {
-                        projects.push(p);
-                    }
+                if let Some(p) = Project::try_for_dirpath(subpath)?
+                    && self.accept(&p, shell)?
+                {
+                    projects.push(p);
                 }
             } else {
                 projects.extend(self.find(&subpath, shell)?);
@@ -126,40 +126,40 @@ impl Finder {
         if self.exclude.iter().any(|name| name == p.name()) {
             return Ok(false);
         }
-        if let Some(flag) = self.def_branch() {
-            if p.on_default_branch()? != flag {
-                return Ok(false);
-            }
+        if let Some(flag) = self.def_branch()
+            && p.on_default_branch()? != flag
+        {
+            return Ok(false);
         }
-        if let Some(flag) = self.has_github() {
-            if p.has_github() != flag {
-                return Ok(false);
-            }
+        if let Some(flag) = self.has_github()
+            && p.has_github() != flag
+        {
+            return Ok(false);
         }
-        if let Some(flag) = self.has_stash() {
-            if p.has_stash()? != flag {
-                return Ok(false);
-            }
+        if let Some(flag) = self.has_stash()
+            && p.has_stash()? != flag
+        {
+            return Ok(false);
         }
-        if let Some(lang) = self.language {
-            if p.language() != lang {
-                return Ok(false);
-            }
+        if let Some(lang) = self.language
+            && p.language() != lang
+        {
+            return Ok(false);
         }
-        if let Some(flag) = self.is_workspace() {
-            if p.is_workspace() != flag {
-                return Ok(false);
-            }
+        if let Some(flag) = self.is_workspace()
+            && p.is_workspace() != flag
+        {
+            return Ok(false);
         }
-        if let Some(flag) = self.is_virtual() {
-            if p.is_virtual_workspace() != flag {
-                return Ok(false);
-            }
+        if let Some(flag) = self.is_virtual()
+            && p.is_virtual_workspace() != flag
+        {
+            return Ok(false);
         }
-        if let Some(ref cmd) = self.filter {
-            if !p.check(shell, ["-c", cmd])? {
-                return Ok(false);
-            }
+        if let Some(ref cmd) = self.filter
+            && !p.check(shell, ["-c", cmd])?
+        {
+            return Ok(false);
         }
         Ok(true)
     }
