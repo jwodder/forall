@@ -148,7 +148,11 @@ impl Project {
                             matches!(k, TargetKind::Lib | TargetKind::Bin | TargetKind::ProcMacro)
                         }) {
                             let Some(pardir) = t.src_path.parent() else {
-                                anyhow::bail!("Could not determine parent directory of src_path {} for project {}", t.src_path, self.name());
+                                anyhow::bail!(
+                                    "Could not determine parent directory of src_path {} for project {}",
+                                    t.src_path,
+                                    self.name()
+                                );
                             };
                             srcs.insert(pardir.to_owned());
                         }

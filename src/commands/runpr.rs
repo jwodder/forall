@@ -4,11 +4,11 @@ use crate::logging::logproject;
 use crate::project::Project;
 use crate::util::{RunOpts, Runner};
 use clap::Args;
-use rand::{rng, seq::IndexedRandom, Rng};
+use rand::{Rng, rng, seq::IndexedRandom};
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use time::{format_description::FormatItem, macros::format_description, OffsetDateTime};
+use time::{OffsetDateTime, format_description::FormatItem, macros::format_description};
 
 static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
     format_description!("forall-runpr-[year][month][day][hour][minute][second]");
