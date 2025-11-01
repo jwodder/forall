@@ -2,7 +2,7 @@ v0.4.0 (in development)
 -----------------------
 - Renamed `--skip` to `--exclude`
 - Don't show `--filter` commands unless `--verbose` is given
-- Increased MSRV to 1.86
+- Increased MSRV to 1.88
 - Added options for filtering/excluding Rust workspaces & virtual workspaces
 - `pre-update`: Use `git add -u` instead of `git add -a`
 
