@@ -1,6 +1,6 @@
 [package]
 name = "forall"
-version = "0.4.0-dev"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.88"
 description = "Operate on each project in a directory"
