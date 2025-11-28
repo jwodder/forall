@@ -4,6 +4,7 @@ use crate::project::Project;
 use clap::{ArgAction, Args};
 use ghrepo::GHRepo;
 use std::ffi::OsString;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use thiserror::Error;
 
@@ -37,9 +38,8 @@ impl Options {
 pub(crate) struct RunOpts {
     /// Treat the command as a path to a script file.
     ///
-    /// The path is canonicalized, and it is run via `perl` for its shebang
-    /// handling; thus, the script need not be executable, but it does need to
-    /// have an appropriate shebang.
+    /// The script file must either be executable or else start with a shebang
+    /// line.
     #[arg(long, conflicts_with = "shell")]
     pub(crate) script: bool,
 
@@ -77,17 +77,37 @@ impl TryFrom<RunOpts> for Runner {
             args.extend(value.command);
             (cmd, args)
         } else if value.script {
-            // Use perl to interpret the script's shebang, thereby supporting
-            // non-executable scripts
-            let cmd = OsString::from("perl");
-            let mut args = Vec::with_capacity(value.command.len());
             let mut iter = value.command.into_iter();
             let scriptfile = iter.next().expect("command should be nonempty");
-            args.push(
-                fs_err::canonicalize(scriptfile)
+            let cmd;
+            let mut args = Vec::new();
+            if is_executable(&scriptfile)? {
+                cmd = fs_err::canonicalize(scriptfile)
                     .map_err(RunOptsError::Canonicalize)?
-                    .into_os_string(),
-            );
+                    .into_os_string();
+            } else {
+                let mut line = String::new();
+                {
+                    let mut fp = BufReader::new(
+                        fs_err::File::open(&scriptfile).map_err(RunOptsError::Open)?,
+                    );
+                    fp.read_line(&mut line).map_err(RunOptsError::Read)?;
+                }
+                let Some(line) = line.strip_prefix("#!") else {
+                    return Err(RunOptsError::NoShebang);
+                };
+                let mut bangargs = line.split_whitespace();
+                let Some(interpreter) = bangargs.next() else {
+                    return Err(RunOptsError::NoShebang);
+                };
+                cmd = OsString::from(interpreter);
+                args.extend(bangargs.map(OsString::from));
+                args.push(
+                    fs_err::canonicalize(scriptfile)
+                        .map_err(RunOptsError::Canonicalize)?
+                        .into_os_string(),
+                );
+            }
             args.extend(iter);
             (cmd, args)
         } else {
@@ -101,8 +121,16 @@ impl TryFrom<RunOpts> for Runner {
 
 #[derive(Debug, Error)]
 pub(crate) enum RunOptsError {
+    #[error("failed to get filesystem metadata for script")]
+    Metadata(#[source] std::io::Error),
+    #[error("failed to open script for reading")]
+    Open(#[source] std::io::Error),
+    #[error("failed to read shebang line from script")]
+    Read(#[source] std::io::Error),
+    #[error("script does not start with shebang")]
+    NoShebang,
     #[error("failed to canonicalize script path")]
-    Canonicalize(#[from] std::io::Error),
+    Canonicalize(#[source] std::io::Error),
 }
 
 pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
@@ -122,6 +150,19 @@ pub(crate) fn get_ghrepo(p: &Path) -> anyhow::Result<Option<GHRepo>> {
 
 pub(crate) fn get_shell() -> OsString {
     std::env::var_os("SHELL").unwrap_or_else(|| OsString::from("sh"))
+}
+
+#[cfg(unix)]
+fn is_executable<P: AsRef<Path>>(p: P) -> Result<bool, RunOptsError> {
+    use std::os::unix::fs::MetadataExt;
+    let md = fs_err::metadata(p).map_err(RunOptsError::Metadata)?;
+    Ok(md.mode() & 0o111 != 0)
+}
+
+#[cfg(not(unix))]
+fn is_executable<P: AsRef<Path>>(p: P) -> Result<bool, RunOptsError> {
+    // TODO: How do you do this on Windows?
+    Ok(false)
 }
 
 #[cfg(test)]
