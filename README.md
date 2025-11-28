@@ -231,9 +231,8 @@ project's directory.
 ### Options
 
 - `--script` — Treat the command as a path to a script file.  The path is
-  canonicalized, and it is run via `perl` for its shebang handling; thus, the
-  script need not be executable, but it does need to have an appropriate
-  shebang.
+  canonicalized, and the script file must either be executable or else start
+  with a shebang line.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
 
@@ -287,9 +286,8 @@ API.
   required.
 
 - `--script` — Treat the command as a path to a script file.  The path is
-  canonicalized, and it is run via `perl` for its shebang handling; thus, the
-  script need not be executable, but it does need to have an appropriate
-  shebang.
+  canonicalized, and the script file must either be executable or else start
+  with a shebang line.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
 
