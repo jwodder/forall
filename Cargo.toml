@@ -11,7 +11,7 @@ exclude = ["/.*"]
 publish = false
 
 [dependencies]
-anstream = "0.6.18"
+anstream = "1.0.0"
 anstyle = "1.0.10"
 anyhow = "1.0.94"
 bstr = { version = "1.11.3", default-features = false, features = ["alloc"] }
