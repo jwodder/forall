@@ -35,10 +35,10 @@ subcommand.
 - `--no-def-branch` — Only operate on projects currently not on their default
   branch
 
-- `--exclude <name>` — Do not operate on the given project.  This option can be
+- `--exclude NAME` — Do not operate on the given project.  This option can be
   specified multiple times.
 
-- `-f <shellcmd>`, `--filter <shellcmd>` — Run `$SHELL -c <shellcmd>` with the
+- `-f SHELLCMD`, `--filter SHELLCMD` — Run `$SHELL -c SHELLCMD` with the
   current working directory set to each project's directory and only operate on
   those projects for which the command succeeds
 
@@ -50,9 +50,9 @@ subcommand.
 
 - `--no-stash` — Only operate on projects that do not have stashed changes
 
-- `-L <language>`, `--language <language>` — Only operate on projects written
-  in the given language.  Possible options are "Python"/"py" and "Rust"/"rs"
-  (all case-insensitive).
+- `-L LANGUAGE`, `--language LANGUAGE` — Only operate on projects written in
+  the given language.  Possible options are "Python"/"py" and "Rust"/"rs" (all
+  case-insensitive).
 
 - `-k`, `--keep-going` — By default, if a subcommand fails or another error
   occurs for a project, `forall` terminates immediately.  If `--keep-going` is
@@ -62,7 +62,7 @@ subcommand.
 - `-q`, `--quiet` — Be less verbose; this option can be specified multiple
   times.  See "Logging" below for more infomation.
 
-- `-R <dirpath>`, `--root <dirpath>` — Start traversing from `<dirpath>`.  This
+- `-R DIRPATH`, `--root DIRPATH` — Start traversing from `DIRPATH`.  This
   option can be specified multiple times to traverse multiple directories.
   [default: the current working directory]
 
@@ -272,17 +272,17 @@ API.
 
 ### Options
 
-- `-b <NAME>`, `--branch <NAME>` — Set the name for the new branch from which
-  the pull request is created.  Defaults to `forall-runpr-%Y%m%d%H%M%S`.
+- `-b NAME`, `--branch NAME` — Set the name for the new branch from which the
+  pull request is created.  Defaults to `forall-runpr-%Y%m%d%H%M%S`.
 
-- `-B <FILE>`, `--pr-body-file <FILE>` — Path to a file containing the body to
-  use for the pull requests.  If not specified, the PRs will have empty bodies.
+- `-B FILE`, `--pr-body-file FILE` — Path to a file containing the body to use
+  for the pull requests.  If not specified, the PRs will have empty bodies.
 
-- `-l <NAME>`, `--label <NAME>` — Apply the given label to the new pull
-  requests.  If the label does not already exist in a repository, it is
-  created.  This option can be specified multiple times.
+- `-l NAME`, `--label NAME` — Apply the given label to the new pull requests.
+  If the label does not already exist in a repository, it is created.  This
+  option can be specified multiple times.
 
-- `-m <TEXT>`, `--message <TEXT>` — The commit message to use.  This option is
+- `-m TEXT`, `--message TEXT` — The commit message to use.  This option is
   required.
 
 - `--script` — Treat the command as a path to a script file.  The path is
@@ -291,9 +291,9 @@ API.
 
 - `--shell` — Run the command with `$SHELL -c <command> <args>`
 
-- `--soft-label <NAME>` — Apply the given label to the new pull requests.  If
-  the label does not already exist in a repository, the label is not applied.
-  This option can be specified multiple times.
+- `--soft-label NAME` — Apply the given label to the new pull requests.  If the
+  label does not already exist in a repository, the label is not applied.  This
+  option can be specified multiple times.
 
-- `-T <TEXT>`, `--pr-title <TEXT>` — The title to give the pull requests.
-  Defaults to the commit message with `[skip ci]` and similar strings removed.
+- `-T TEXT`, `--pr-title TEXT` — The title to give the pull requests.  Defaults
+  to the commit message with `[skip ci]` and similar strings removed.
