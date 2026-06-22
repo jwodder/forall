@@ -21,7 +21,7 @@ fs-err = "3.0.0"
 gh-token = "0.1.7"
 ghrepo = { version = "0.7.0", features = ["serde"] }
 indenter = "0.3.3"
-itertools = "0.14.0"
+itertools = "0.15.0"
 log = "0.4.27"
 minigh = "0.2.0"
 rand = "0.10.0"
