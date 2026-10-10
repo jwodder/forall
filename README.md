@@ -35,6 +35,12 @@ subcommand.
 - `--no-def-branch` — Only operate on projects currently not on their default
   branch
 
+- `--dirty` — Only operate on projects that have uncommitted changes in their
+  working trees
+
+- `--not-dirty` — Only operate on projects that do not have uncommitted changes
+  in their working trees
+
 - `--exclude NAME` — Do not operate on the given project.  This option can be
   specified multiple times.
 
@@ -68,11 +74,11 @@ subcommand.
 
 - `-W`, `--workspace` — Only operate on projects that are Rust workspaces
 
--  `--not-workspace` — Only operate on projects that are not Rust workspaces
+- `--not-workspace` — Only operate on projects that are not Rust workspaces
 
 - `--virtual` — Only operate on projects that are Rust virtual workspaces
 
--  `--not-virtual` — Only operate on projects that are not Rust virtual
+- `--not-virtual` — Only operate on projects that are not Rust virtual
    workspaces
 
 - `-v`, `--verbose` — Be more verbose.  See "Logging" below for more

@@ -17,6 +17,14 @@ pub(crate) struct Finder {
     #[arg(long, global = true)]
     no_def_branch: bool,
 
+    /// Only operate on projects with uncommitted changes
+    #[arg(long, overrides_with = "not_dirty", global = true)]
+    dirty: bool,
+
+    /// Only operate on projects without uncommitted changes
+    #[arg(long, global = true)]
+    not_dirty: bool,
+
     /// Don't operate on the given project.  Can be specified multiple times.
     #[arg(long, global = true, value_name = "NAME")]
     exclude: Vec<String>,
@@ -136,11 +144,17 @@ impl Finder {
         {
             return Ok(false);
         }
+        if let Some(flag) = self.is_dirty()
+            && p.is_dirty()? != flag
+        {
+            return Ok(false);
+        }
         if let Some(flag) = self.has_stash()
             && p.has_stash()? != flag
         {
             return Ok(false);
         }
+
         if let Some(lang) = self.language
             && p.language() != lang
         {
@@ -202,6 +216,15 @@ impl Finder {
 
     fn is_virtual(&self) -> Option<bool> {
         match (self.r#virtual, self.not_virtual) {
+            (false, false) => None,
+            (true, false) => Some(true),
+            (false, true) => Some(false),
+            (true, true) => unreachable!(),
+        }
+    }
+
+    fn is_dirty(&self) -> Option<bool> {
+        match (self.dirty, self.not_dirty) {
             (false, false) => None,
             (true, false) => Some(true),
             (false, true) => Some(false),
