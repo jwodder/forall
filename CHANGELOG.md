@@ -2,6 +2,7 @@ v0.5.0 (in development)
 -----------------------
 - `run` and `run-pr`: Shebang handling for the `--script` option is now done by
   `forall` directly rather than by invoking `perl`
+- Added `--dirty` and `--not-dirty` filter options
 
 v0.4.0 (2025-11-01)
 -------------------
