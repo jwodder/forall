@@ -8,10 +8,6 @@ use rand::{Rng, rng, seq::IndexedRandom};
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use time::{OffsetDateTime, format_description::FormatItem, macros::format_description};
-
-static DEFAULT_BRANCH_FORMAT: &[FormatItem<'_>] =
-    format_description!("forall-runpr-[year][month][day][hour][minute][second]");
 
 // These are the "default colors" listed when creating a label via GitHub's web
 // UI as of 2023-09-24:
@@ -67,13 +63,11 @@ impl RunPr {
     pub(super) fn into_forall(self) -> anyhow::Result<Box<dyn ForAll>> {
         let github = GitHub::authed()?;
         let colorgen = RandomColor::new(rng());
-        let branch = match self.branch {
-            Some(b) => b,
-            None => OffsetDateTime::now_local()
-                .unwrap_or_else(|_| OffsetDateTime::now_utc())
-                .format(&DEFAULT_BRANCH_FORMAT)
-                .expect("formatting a datetime should not fail"),
-        };
+        let branch = self.branch.unwrap_or_else(|| {
+            jiff::Zoned::now()
+                .strftime("forall-runpr-%Y%m%d%H%M%S")
+                .to_string()
+        });
         let pr_title = self
             .pr_title
             .as_deref()
