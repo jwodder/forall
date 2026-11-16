@@ -22,7 +22,7 @@ gh-token = "0.1.7"
 ghrepo = { version = "0.7.0", features = ["serde"] }
 indenter = "0.3.3"
 itertools = "0.15.0"
-jiff = "0.2.40"
+jiff = "1.0.0"
 log = "0.4.27"
 minigh = "0.3.0"
 rand = "0.10.0"
