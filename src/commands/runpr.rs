@@ -64,7 +64,7 @@ impl RunPr {
         let github = GitHub::authed()?;
         let colorgen = RandomColor::new(rng());
         let branch = self.branch.unwrap_or_else(|| {
-            jiff::Zoned::now()
+            jiff::ZonedDateTime::now()
                 .strftime("forall-runpr-%Y%m%d%H%M%S")
                 .to_string()
         });
